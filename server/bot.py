@@ -41,6 +41,7 @@ from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.processors.frameworks.rtvi import RTVIConfig, RTVIObserver, RTVIProcessor
 from pipecat.services.cartesia import CartesiaTTSService
+from pipecat.services.gladia import GladiaInputParams, GladiaSTTService
 from pipecat.services.openai import OpenAILLMService
 from pipecat.transports.services.daily import DailyParams, DailyTransport
 from pipecatcloud.agent import DailySessionArguments
@@ -56,7 +57,9 @@ if LOCAL_RUN:
     try:
         from local_runner import configure
     except ImportError:
-        logger.error("Could not import local_runner module. Local development mode may not work.")
+        logger.error(
+            "Could not import local_runner module. Local development mode may not work."
+        )
 
 # Logger for local dev
 # logger.add(sys.stderr, level="DEBUG")
@@ -71,7 +74,9 @@ for i in range(1, 26):
     # Get the filename without the extension to use as the dictionary key
     # Open the image and convert it to bytes
     with Image.open(full_path) as img:
-        sprites.append(OutputImageRawFrame(image=img.tobytes(), size=img.size, format=img.format))
+        sprites.append(
+            OutputImageRawFrame(image=img.tobytes(), size=img.size, format=img.format)
+        )
 
 # Create a smooth animation by adding reversed frames
 flipped = sprites[::-1]
@@ -79,7 +84,9 @@ sprites.extend(flipped)
 
 # Define static and animated states
 quiet_frame = sprites[0]  # Static frame for when bot is listening
-talking_frame = SpriteFrame(images=sprites)  # Animation sequence for when bot is talking
+talking_frame = SpriteFrame(
+    images=sprites
+)  # Animation sequence for when bot is talking
 
 
 class TalkingAnimation(FrameProcessor):
@@ -115,7 +122,9 @@ class TalkingAnimation(FrameProcessor):
         await self.push_frame(frame, direction)
 
 
-async def fetch_weather_from_api(function_name, tool_call_id, args, llm, context, result_callback):
+async def fetch_weather_from_api(
+    function_name, tool_call_id, args, llm, context, result_callback
+):
     """Fetch weather data dummy function.
 
     This function simulates fetching weather data from an external API.
@@ -147,7 +156,7 @@ async def main(room_url: str, token: str, config: dict):
             camera_out_enabled=True,  # Enable the camera output for the bot
             camera_out_width=1024,  # Set the camera output width
             camera_out_height=576,  # Set the camera output height
-            transcription_enabled=True,  # Enable transcription for the user
+            transcription_enabled=False,  # Enable transcription for the user (we're using a Gladia STT processor instead)
             vad_enabled=True,  # Enable VAD to handle user speech
             vad_analyzer=SileroVADAnalyzer(),  # Use the Silero VAD analyzer
             vad_audio_passthrough=True,  # Pass audio through VAD for user speech to the rest of the pipeline
@@ -158,6 +167,13 @@ async def main(room_url: str, token: str, config: dict):
     tts = CartesiaTTSService(
         api_key=os.getenv("CARTESIA_API_KEY"),
         voice_id="c45bc5ec-dc68-4feb-8829-6e6b2748095d",  # Movieman
+    )
+
+    stt = GladiaSTTService(
+        api_key=os.getenv("GLADIA_API_KEY"),
+        model="solaria-1",
+        # Setting Gladia's endpointing low because we use our own VAD
+        params=GladiaInputParams(endpointing=0.01),
     )
 
     # Initialize LLM service
@@ -212,6 +228,7 @@ async def main(room_url: str, token: str, config: dict):
     pipeline = Pipeline(
         [
             transport.input(),
+            stt,
             rtvi,
             context_aggregator.user(),
             llm,
