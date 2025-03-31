@@ -2,8 +2,8 @@
 set -e
 
 VERSION="0.1"
-DOCKER_USERNAME="your-docker-hub-username"
-AGENT_NAME="simple-chatbot"
+DOCKER_USERNAME="chadbailey59"
+AGENT_NAME="simple-chatbot-gladia"
 
 # Build the Docker image with the correct context
 echo "Building Docker image..."

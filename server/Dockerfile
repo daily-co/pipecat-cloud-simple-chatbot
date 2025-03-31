@@ -1,5 +1,5 @@
 FROM dailyco/pipecat-base:latest
-
+RUN apt-get update && apt-get install git -y
 COPY ./requirements.txt requirements.txt
 
 COPY ./assets assets
