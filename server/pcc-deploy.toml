@@ -1,6 +1,7 @@
 agent_name = "simple-chatbot-gladia"
-image = "chadbailey59/simple-chatbot-gladia:0.1"
+image = "chadbailey59/simple-chatbot-gladia:0.2"
 secret_set = "simple-chatbot-secrets"
 
 [scaling]
-  min_instances = 0
+  min_instances = 1
+  max_instances = 10
