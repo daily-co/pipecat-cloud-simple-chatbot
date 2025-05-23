@@ -1,5 +1,5 @@
 agent_name = "simple-chatbot"
-image = "hushdaily/simple-chatbot:0.1"
+image = "hushdaily/simple-chatbot:0.2"
 # image_credentials = "simple-chatbot-image-pull-secret"
 secret_set = "simple-chatbot-secrets"
 enable_krisp = true

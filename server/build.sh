@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="0.1"
+VERSION="0.2"
 DOCKER_USERNAME="hushdaily"
 AGENT_NAME="simple-chatbot"
 
