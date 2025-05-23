@@ -36,7 +36,7 @@ from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.processors.frameworks.rtvi import RTVIConfig, RTVIObserver, RTVIProcessor
-from pipecat.services.azure import AzureTTSService
+from pipecat.services.azure.tts import AzureTTSService
 from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.transports.services.daily import (
     DailyParams,
@@ -139,13 +139,13 @@ async def main(room_url: str, token: str, config: dict):
             video_out_enabled=True,  # Enable the video output for the bot
             video_out_width=1024,  # Set the video output width
             video_out_height=576,  # Set the video output height
-            transcription_enabled=True,  # Enable transcription for the user
-            vad_analyzer=SileroVADAnalyzer(),  # Use the Silero VAD analyzer
+            vad_analyzer=SileroVADAnalyzer(),
+            transcription_enabled=True,
             #
             # Chinese
             #
             transcription_settings=DailyTranscriptionSettings(
-                language="zh-TW", tier="nova", model="2-general"
+                language="zh-TW", model="nova-2-general"
             ),
         ),
     )
@@ -263,7 +263,4 @@ async def bot(args: DailySessionArguments):
         logger.info("Bot process completed")
     except Exception as e:
         logger.exception(f"Error in bot process: {str(e)}")
-        raise
-        raise
-        raise
         raise
