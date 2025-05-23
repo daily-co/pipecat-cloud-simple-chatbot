@@ -1,5 +1,5 @@
 python-dotenv
 fastapi[all]
 uvicorn
-git+https://github.com/pipecat-ai/pipecat.git@a809b71#egg=pipecat-ai[daily,azure,openai,silero,elevenlabs]
+pipecat-ai[daily,azure,openai,silero,elevenlabs] @ git+https://github.com/pipecat-ai/pipecat.git@a809b71
 pipecatcloud
