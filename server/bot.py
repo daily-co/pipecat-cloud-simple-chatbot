@@ -36,7 +36,9 @@ from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.processors.frameworks.rtvi import RTVIConfig, RTVIObserver, RTVIProcessor
-from pipecat.services.azure.tts import AzureTTSService
+from pipecat.services.elevenlabs.tts import ElevenLabsTTSService
+
+# from pipecat.services.azure.tts import AzureTTSService
 from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.transports.services.daily import (
     DailyParams,
@@ -151,21 +153,27 @@ async def main(room_url: str, token: str, config: dict):
     )
 
     # Initialize text-to-speech service
-    tts = AzureTTSService(
-        api_key=os.getenv("AZURE_SPEECH_API_KEY"),
-        region=os.getenv("AZURE_SPEECH_REGION"),
-        language="zh-TW",
-        voice="zh-TW-YunJheNeural",
-    )
-
-    # tts = ElevenLabsTTSService(
-    #     api_key=os.getenv("ELEVENLABS_API_KEY"),
-    #     # English
-    #     voice_id="cgSgspJ2msm6clMCkdW9",
-    #     # Chinese
-    #     # voice_id="fQj4gJSexpu8RDE2Ii5m",
-    #     # model="eleven_turbo_v2_5",
+    # tts = AzureTTSService(
+    #     api_key=os.getenv("AZURE_SPEECH_API_KEY"),
+    #     region=os.getenv("AZURE_SPEECH_REGION"),
+    #     language="zh-TW",
+    #     voice="zh-TW-YunJheNeural",
     # )
+
+    tts = ElevenLabsTTSService(
+        api_key=os.getenv("ELEVENLABS_API_KEY"),
+        # English
+        # voice_id="cgSgspJ2msm6clMCkdW9",
+        # Chinese
+        voice_id="fQj4gJSexpu8RDE2Ii5m",
+        model="eleven_turbo_v2_5",
+        params=ElevenLabsTTSService.InputParams(
+            speed=0.9,
+            language="zh-TW",  # Set the language for TTS
+            use_speaker_boost=True,  # Enable speaker boost
+            style=1.0,
+        ),
+    )
 
     # Initialize LLM service
     llm = OpenAILLMService(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4o")
@@ -182,6 +190,8 @@ async def main(room_url: str, token: str, config: dict):
             先和學習者講講我自己的情況。如果學習者使用漢語有偏誤時，你需要糾正他，並鼓勵學習者。
             請你先和學習者介紹一下自己，只能使用初級的詞彙，
             例如：你好，我是你的漢語老師，我叫小明。我喜歡和朋友聊天，你呢？
+            僅使用一年級學生能夠理解的單字。
+            
             """,
         },
     ]
