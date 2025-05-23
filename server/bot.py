@@ -29,7 +29,6 @@ from pipecat.frames.frames import (
     Frame,
     OutputImageRawFrame,
     SpriteFrame,
-    TTSSpeakFrame,
 )
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
@@ -112,18 +111,6 @@ class TalkingAnimation(FrameProcessor):
         await self.push_frame(frame, direction)
 
 
-async def fetch_weather_from_api(
-    function_name, tool_call_id, args, llm, context, result_callback
-):
-    """Fetch weather data dummy function.
-
-    This function simulates fetching weather data from an external API.
-    It demonstrates how to call an external service from the language model.
-    """
-    await llm.push_frame(TTSSpeakFrame("Let me check on that."))
-    await result_callback({"conditions": "nice", "temperature": "75"})
-
-
 async def main(room_url: str, token: str, config: dict):
     """Main bot execution function.
 
@@ -182,32 +169,6 @@ async def main(room_url: str, token: str, config: dict):
 
     # Initialize LLM service
     llm = OpenAILLMService(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4o")
-
-    # Register your function call providing the function name and callback
-    # llm.register_function("get_current_weather", fetch_weather_from_api)
-
-    # Define your function call using the FunctionSchema
-    # Learn more about function calling in Pipecat:
-    # https://docs.pipecat.ai/guides/features/function-calling
-    # weather_function = FunctionSchema(
-    #     name="get_current_weather",
-    #     description="Get the current weather",
-    #     properties={
-    #         "location": {
-    #             "type": "string",
-    #             "description": "The city and state, e.g. San Francisco, CA",
-    #         },
-    #         "format": {
-    #             "type": "string",
-    #             "enum": ["celsius", "fahrenheit"],
-    #             "description": "The temperature unit to use. Infer this from the user's location.",
-    #         },
-    #     },
-    #     required=["location", "format"],
-    # )
-
-    # Set up the tools schema with your weather function call
-    # tools = ToolsSchema(standard_tools=[weather_function])
 
     # Set up initial messages for the bot
     messages = [
