@@ -160,11 +160,11 @@ async def main(room_url: str, token: str, config: dict):
 
     # tts = ElevenLabsTTSService(
     #     api_key=os.getenv("ELEVENLABS_API_KEY"),
-    #     #
+    #     # English
+    #     voice_id="cgSgspJ2msm6clMCkdW9",
     #     # Chinese
-    #     #
-    #     voice_id="fQj4gJSexpu8RDE2Ii5m",
-    #     model="eleven_multilingual_v2",
+    #     # voice_id="fQj4gJSexpu8RDE2Ii5m",
+    #     # model="eleven_turbo_v2_5",
     # )
 
     # Initialize LLM service
