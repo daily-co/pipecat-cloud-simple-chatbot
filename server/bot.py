@@ -22,8 +22,6 @@ import os
 from dotenv import load_dotenv
 from loguru import logger
 from PIL import Image
-from pipecat.adapters.schemas.function_schema import FunctionSchema
-from pipecat.adapters.schemas.tools_schema import ToolsSchema
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.frames.frames import (
     BotStartedSpeakingFrame,
@@ -39,7 +37,7 @@ from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.processors.frameworks.rtvi import RTVIConfig, RTVIObserver, RTVIProcessor
-from pipecat.services.cartesia.tts import CartesiaTTSService
+from pipecat.services.azure import AzureTTSService
 from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.transports.services.daily import DailyParams, DailyTransport
 from pipecatcloud.agent import DailySessionArguments
@@ -62,7 +60,9 @@ for i in range(1, 26):
     # Get the filename without the extension to use as the dictionary key
     # Open the image and convert it to bytes
     with Image.open(full_path) as img:
-        sprites.append(OutputImageRawFrame(image=img.tobytes(), size=img.size, format=img.format))
+        sprites.append(
+            OutputImageRawFrame(image=img.tobytes(), size=img.size, format=img.format)
+        )
 
 # Create a smooth animation by adding reversed frames
 flipped = sprites[::-1]
@@ -70,7 +70,9 @@ sprites.extend(flipped)
 
 # Define static and animated states
 quiet_frame = sprites[0]  # Static frame for when bot is listening
-talking_frame = SpriteFrame(images=sprites)  # Animation sequence for when bot is talking
+talking_frame = SpriteFrame(
+    images=sprites
+)  # Animation sequence for when bot is talking
 
 
 class TalkingAnimation(FrameProcessor):
@@ -106,7 +108,9 @@ class TalkingAnimation(FrameProcessor):
         await self.push_frame(frame, direction)
 
 
-async def fetch_weather_from_api(function_name, tool_call_id, args, llm, context, result_callback):
+async def fetch_weather_from_api(
+    function_name, tool_call_id, args, llm, context, result_callback
+):
     """Fetch weather data dummy function.
 
     This function simulates fetching weather data from an external API.
@@ -137,7 +141,9 @@ async def main(room_url: str, token: str, config: dict):
         "Simple Chatbot",
         DailyParams(
             audio_in_enabled=True,  # Enable input audio for the bot
-            audio_in_filter=None if IS_LOCAL_RUN else KrispFilter(),  # Only use Krisp in production
+            audio_in_filter=None
+            if IS_LOCAL_RUN
+            else KrispFilter(),  # Only use Krisp in production
             audio_out_enabled=True,  # Enable output audio for the bot
             video_out_enabled=True,  # Enable the video output for the bot
             video_out_width=1024,  # Set the video output width
@@ -148,52 +154,71 @@ async def main(room_url: str, token: str, config: dict):
     )
 
     # Initialize text-to-speech service
-    tts = CartesiaTTSService(
-        api_key=os.getenv("CARTESIA_API_KEY"),
-        voice_id="c45bc5ec-dc68-4feb-8829-6e6b2748095d",  # Movieman
+    tts = AzureTTSService(
+        api_key=os.getenv("AZURE_SPEECH_API_KEY"),
+        region=os.getenv("AZURE_SPEECH_REGION"),
+        language="zh-TW",
+        voice="zh-TW-YunJheNeural",
     )
+
+    # tts = ElevenLabsTTSService(
+    #     api_key=os.getenv("ELEVENLABS_API_KEY"),
+    #     #
+    #     # Chinese
+    #     #
+    #     voice_id="fQj4gJSexpu8RDE2Ii5m",
+    #     model="eleven_multilingual_v2",
+    # )
 
     # Initialize LLM service
     llm = OpenAILLMService(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4o")
 
     # Register your function call providing the function name and callback
-    llm.register_function("get_current_weather", fetch_weather_from_api)
+    # llm.register_function("get_current_weather", fetch_weather_from_api)
 
     # Define your function call using the FunctionSchema
     # Learn more about function calling in Pipecat:
     # https://docs.pipecat.ai/guides/features/function-calling
-    weather_function = FunctionSchema(
-        name="get_current_weather",
-        description="Get the current weather",
-        properties={
-            "location": {
-                "type": "string",
-                "description": "The city and state, e.g. San Francisco, CA",
-            },
-            "format": {
-                "type": "string",
-                "enum": ["celsius", "fahrenheit"],
-                "description": "The temperature unit to use. Infer this from the user's location.",
-            },
-        },
-        required=["location", "format"],
-    )
+    # weather_function = FunctionSchema(
+    #     name="get_current_weather",
+    #     description="Get the current weather",
+    #     properties={
+    #         "location": {
+    #             "type": "string",
+    #             "description": "The city and state, e.g. San Francisco, CA",
+    #         },
+    #         "format": {
+    #             "type": "string",
+    #             "enum": ["celsius", "fahrenheit"],
+    #             "description": "The temperature unit to use. Infer this from the user's location.",
+    #         },
+    #     },
+    #     required=["location", "format"],
+    # )
 
     # Set up the tools schema with your weather function call
-    tools = ToolsSchema(standard_tools=[weather_function])
+    # tools = ToolsSchema(standard_tools=[weather_function])
 
     # Set up initial messages for the bot
     messages = [
         {
             "role": "system",
-            "content": "You are Chatbot, a friendly, helpful robot. Your goal is to demonstrate your capabilities in a succinct way. Your output will be converted to audio so don't include special characters in your answers. Respond to what the user said in a creative and helpful way, but keep your responses brief. Start by introducing yourself.",
+            #
+            # Chinese
+            #
+            "content": """
+            你是一位有耐心，溫柔又熱情的漢語老師。
+            先和學習者講講我自己的情況。如果學習者使用漢語有偏誤時，你需要糾正他，並鼓勵學習者。
+            請你先和學習者介紹一下自己，只能使用初級的詞彙，
+            例如：你好，我是你的漢語老師，我叫小明。我喜歡和朋友聊天，你呢？
+            """,
         },
     ]
 
     # Set up conversation context and management
     # The context_aggregator will automatically collect conversation context
     # Pass your initial messages and tools to the context to initialize the context
-    context = OpenAILLMContext(messages, tools)
+    context = OpenAILLMContext(messages)
     context_aggregator = llm.create_context_aggregator(context)
 
     ta = TalkingAnimation()
@@ -267,4 +292,7 @@ async def bot(args: DailySessionArguments):
         logger.info("Bot process completed")
     except Exception as e:
         logger.exception(f"Error in bot process: {str(e)}")
+        raise
+        raise
+        raise
         raise
