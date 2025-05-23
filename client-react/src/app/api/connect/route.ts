@@ -1,4 +1,4 @@
-import { NextResponse, NextRequest } from 'next/server';
+import { NextResponse, NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,10 +7,10 @@ export async function POST(request: NextRequest) {
     const response = await fetch(
       `https://api.pipecat.daily.co/v1/public/${process.env.AGENT_NAME}/start`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
           Authorization: `Bearer ${process.env.PIPECAT_CLOUD_API_KEY}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           // Create Daily room
@@ -22,6 +22,8 @@ export async function POST(request: NextRequest) {
         }),
       }
     );
+
+    console.log("api key,", process.env.PIPECAT_CLOUD_API_KEY);
 
     if (!response.ok) {
       throw new Error(`API responded with status: ${response.status}`);
@@ -35,9 +37,9 @@ export async function POST(request: NextRequest) {
       token: data.dailyToken,
     });
   } catch (error) {
-    console.error('API error:', error);
+    console.error("API error:", error);
     return NextResponse.json(
-      { error: 'Failed to start agent' },
+      { error: "Failed to start agent" },
       { status: 500 }
     );
   }

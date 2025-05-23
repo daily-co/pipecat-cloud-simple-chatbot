@@ -39,7 +39,11 @@ from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.processors.frameworks.rtvi import RTVIConfig, RTVIObserver, RTVIProcessor
 from pipecat.services.azure import AzureTTSService
 from pipecat.services.openai.llm import OpenAILLMService
-from pipecat.transports.services.daily import DailyParams, DailyTransport
+from pipecat.transports.services.daily import (
+    DailyParams,
+    DailyTranscriptionSettings,
+    DailyTransport,
+)
 from pipecatcloud.agent import DailySessionArguments
 
 load_dotenv(override=True)
@@ -150,6 +154,12 @@ async def main(room_url: str, token: str, config: dict):
             video_out_height=576,  # Set the video output height
             transcription_enabled=True,  # Enable transcription for the user
             vad_analyzer=SileroVADAnalyzer(),  # Use the Silero VAD analyzer
+            #
+            # Chinese
+            #
+            transcription_settings=DailyTranscriptionSettings(
+                language="zh-TW", tier="nova", model="2-general"
+            ),
         ),
     )
 
