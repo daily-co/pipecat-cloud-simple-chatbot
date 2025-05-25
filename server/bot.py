@@ -21,7 +21,6 @@ import os
 
 from dotenv import load_dotenv
 from loguru import logger
-from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.frames.frames import (
     EndFrame,
     Frame,
@@ -100,10 +99,15 @@ async def main(room_url: str, token: str, config: dict):
     - Animation processing
     - RTVI event handling
     """
-    logger.info(f"Body: {config}")
+    default_config = {
+        "location": "rtsp://rtspstream:9bGdZ6NKfRXnMbFAg71al@zephyr.rtsp.stream/people",
+        "prompt": "Are there people in the bottom right corner of the image? Only answer with YES or NO.",
+    }
+    # Use default_config if config is empty
+    if not config:
+        config = default_config
 
-    if not IS_LOCAL_RUN:
-        from pipecat.audio.filters.krisp_filter import KrispFilter
+    logger.info(f"Body: {config}")
 
     transport = DailyTransport(
         room_url,
@@ -111,15 +115,11 @@ async def main(room_url: str, token: str, config: dict):
         "Simple Chatbot",
         DailyParams(
             audio_in_enabled=True,  # Enable input audio for the bot
-            audio_in_filter=None
-            if IS_LOCAL_RUN
-            else KrispFilter(),  # Only use Krisp in production
+            audio_in_filter=None,
             audio_out_enabled=True,  # Enable output audio for the bot
             video_out_enabled=True,  # Enable the video output for the bot
             video_out_width=1024,  # Set the video output width
             video_out_height=576,  # Set the video output height
-            transcription_enabled=True,  # Enable transcription for the user
-            vad_analyzer=SileroVADAnalyzer(),  # Use the Silero VAD analyzer
         ),
     )
 
@@ -193,7 +193,7 @@ async def bot(args: DailySessionArguments):
         body: The configuration object from the request body
         session_id: The session ID for logging
     """
-    logger.info(f"Bot process initialized {args.room_url} {args.token}")
+    logger.info(f"Bot process initialized {args.room_url} {args.token} {args.body}")
 
     try:
         await main(args.room_url, args.token, args.body)
