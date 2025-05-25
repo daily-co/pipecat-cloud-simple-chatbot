@@ -1,17 +1,18 @@
-'use client';
+"use client";
 
 import {
   RTVIClientAudio,
   RTVIClientVideo,
   useRTVIClientTransportState,
-} from '@pipecat-ai/client-react';
-import { ConnectButton } from '../components/ConnectButton';
-import { StatusDisplay } from '../components/StatusDisplay';
-import { DebugDisplay } from '../components/DebugDisplay';
+} from "@pipecat-ai/client-react";
+import { ConnectButton } from "../components/ConnectButton";
+import { StatusDisplay } from "../components/StatusDisplay";
+import { DebugDisplay } from "../components/DebugDisplay";
+import { ConfigDislay } from "@/components/ConfigDisplay";
 
 function BotVideo() {
   const transportState = useRTVIClientTransportState();
-  const isConnected = transportState !== 'disconnected';
+  const isConnected = transportState !== "disconnected";
 
   return (
     <div className="bot-container">
@@ -33,6 +34,7 @@ export default function Home() {
       <div className="main-content">
         <BotVideo />
       </div>
+      <ConfigDislay />
 
       <DebugDisplay />
       <RTVIClientAudio />
