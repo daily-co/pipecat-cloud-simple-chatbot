@@ -193,6 +193,7 @@ async def bot(args: DailySessionArguments):
         body: The configuration object from the request body
         session_id: The session ID for logging
     """
+
     logger.info(f"Bot process initialized {args.room_url} {args.token} {args.body}")
 
     try:
