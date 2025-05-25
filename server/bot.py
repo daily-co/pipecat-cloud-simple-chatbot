@@ -136,7 +136,9 @@ async def main(room_url: str, token: str, config: dict):
     rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
 
     # If you run into weird description, try with use_cpu=True
-    moondream = MoondreamService()
+    moondream = MoondreamService(
+        api_key=os.environ.get("MOONDREAM_API_KEY", ""),
+    )
 
     prompt = config.get("prompt", "")
     ir = UserImageRequester(prompt)
