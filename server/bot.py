@@ -29,6 +29,7 @@ from pipecat.frames.frames import (
     TextFrame,
 )
 from pipecat.observers.loggers.debug_log_observer import DebugLogObserver, FrameEndpoint
+from pipecat.pipeline.parallel_pipeline import ParallelPipeline
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineTask
@@ -61,6 +62,7 @@ class AlertProcessor(FrameProcessor):
         if isinstance(frame, TextFrame):
             text = frame.text.strip().upper()
             message_frame = RTVIServerMessageFrame(data=text)
+            logger.info(f"AlertProcessor sending message: {text}")
             await self.push_frame(message_frame)
 
         await self.push_frame(frame, direction)
@@ -101,7 +103,7 @@ async def main(room_url: str, token: str, config: dict):
     """
     default_config = {
         "location": "rtsp://rtspstream:9bGdZ6NKfRXnMbFAg71al@zephyr.rtsp.stream/people",
-        "prompt": "Are there people in the bottom right corner of the image? Only answer with YES or NO.",
+        "prompt": "Is the grey house door open? Answer with YES or NO.",
     }
     # Use default_config if config is empty
     if not config:
@@ -125,8 +127,18 @@ async def main(room_url: str, token: str, config: dict):
 
     location = config.get("location", "")
 
+    # Real security camera example
+    # gst = GStreamerPipelineSource(
+    #     pipeline=(f"rtspsrc location={location} ! decodebin ! autovideosink"),
+    #     out_params=GStreamerPipelineSource.OutputParams(
+    #         video_width=1280,
+    #         video_height=720,
+    #     ),
+    # )
+
+    # Video clip example
     gst = GStreamerPipelineSource(
-        pipeline=(f"rtspsrc location={location} ! decodebin ! autovideosink"),
+        pipeline="filesrc location=door.mp4",
         out_params=GStreamerPipelineSource.OutputParams(
             video_width=1280,
             video_height=720,
@@ -149,11 +161,7 @@ async def main(room_url: str, token: str, config: dict):
         [
             gst,  # GStreamer file source
             rtvi,
-            ir,
-            va,
-            moondream,
-            alert,  # Send an email alert or something if the door is open
-            transport.output(),  # Transport bot output
+            ParallelPipeline([ir, va, moondream, alert], [transport.output()]),
         ]
     )
 

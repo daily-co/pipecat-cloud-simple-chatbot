@@ -14,7 +14,7 @@ export function ConfigDislay() {
   const debugLogRef = useRef<HTMLDivElement>(null);
   const client = useRTVIClient();
   const [prompt, setPrompt] = useState(
-    "Is this door open? Only answer with YES or NO."
+    "Is this door open? Only answer with YES or NO. (This does not work yet.)"
   );
 
   const log = useCallback((message: string) => {
