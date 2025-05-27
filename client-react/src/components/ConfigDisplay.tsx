@@ -13,9 +13,7 @@ import { useRTVIClient, useRTVIClientEvent } from "@pipecat-ai/client-react";
 export function ConfigDislay() {
   const debugLogRef = useRef<HTMLDivElement>(null);
   const client = useRTVIClient();
-  const [prompt, setPrompt] = useState(
-    "Is this door open? Only answer with YES or NO. (This does not work yet.)"
-  );
+  const [isDoorOpen, setIsDoorOpen] = useState("NO");
 
   const log = useCallback((message: string) => {
     if (!debugLogRef.current) return;
@@ -139,6 +137,16 @@ export function ConfigDislay() {
     )
   );
 
+  useRTVIClientEvent(
+    RTVIEvent.ServerMessage,
+    useCallback(
+      (data: unknown) => {
+        setIsDoorOpen(String(data));
+      },
+      [setIsDoorOpen]
+    )
+  );
+
   return (
     <div
       className="config-panel"
@@ -164,65 +172,8 @@ export function ConfigDislay() {
           letterSpacing: "0.01em",
         }}
       >
-        Change Prompt
+        Is the door open? {isDoorOpen}
       </h3>
-      <textarea
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        style={{
-          minHeight: 80,
-          fontSize: "1rem",
-          borderRadius: 8,
-          border: "1px solid #cbd5e1",
-          padding: "0.75rem 1rem",
-          background: "#fff",
-          color: "#334155",
-          resize: "vertical",
-          outline: "none",
-          boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
-          transition: "border 0.2s",
-        }}
-        placeholder="Type your prompt here..."
-      />
-      <button
-        onClick={() => {
-          if (!client) {
-            console.error("RTVI client is not initialized");
-            return;
-          }
-          const message: RTVIMessage = {
-            id: "custom-prompt",
-            type: "custom",
-            label: "Change Prompt",
-            data: {
-              prompt,
-            },
-          };
-          client.sendMessage(message);
-        }}
-        style={{
-          background: "linear-gradient(90deg, #38bdf8 0%, #6366f1 100%)",
-          color: "#fff",
-          border: "none",
-          borderRadius: 8,
-          padding: "0.7rem 1.5rem",
-          fontWeight: 600,
-          fontSize: "1rem",
-          cursor: "pointer",
-          boxShadow: "0 1px 4px rgba(56,189,248,0.08)",
-          transition: "background 0.2s, box-shadow 0.2s",
-        }}
-        onMouseOver={(e) =>
-          (e.currentTarget.style.background =
-            "linear-gradient(90deg, #6366f1 0%, #38bdf8 100%)")
-        }
-        onMouseOut={(e) =>
-          (e.currentTarget.style.background =
-            "linear-gradient(90deg, #38bdf8 0%, #6366f1 100%)")
-        }
-      >
-        Change
-      </button>
     </div>
   );
 }
