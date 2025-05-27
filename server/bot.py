@@ -34,6 +34,7 @@ from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineTask
 from pipecat.processors.aggregators.vision_image_frame import VisionImageFrameAggregator
+from pipecat.processors.filters.frame_filter import FrameFilter
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.processors.frameworks.rtvi import (
     RTVIConfig,
@@ -157,11 +158,16 @@ async def main(room_url: str, token: str, config: dict):
     va = VisionImageFrameAggregator()
     alert = AlertProcessor()
 
+    text_filter = FrameFilter(types=(TextFrame))
+
     pipeline = Pipeline(
         [
             gst,  # GStreamer file source
             rtvi,
-            ParallelPipeline([ir, va, moondream, alert], [transport.output()]),
+            ParallelPipeline(
+                [ir, va, moondream, alert, text_filter, transport.output()],
+                [transport.output()],
+            ),
         ]
     )
 
