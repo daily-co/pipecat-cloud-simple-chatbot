@@ -79,7 +79,7 @@ class UserImageRequester(FrameProcessor):
         await super().process_frame(frame, direction)
 
         if isinstance(frame, OutputImageRawFrame):
-            if self._frame_count == 15:  # Every 15 frames
+            if self._frame_count == 0:  # Every frame
                 text_frame = TextFrame(self._prompt)
                 await self.push_frame(text_frame)
                 input_frame = InputImageRawFrame(
@@ -90,7 +90,7 @@ class UserImageRequester(FrameProcessor):
                 await self.push_frame(input_frame)
                 self._frame_count = 0
             else:
-                self._frame_count += 1
+                self._frame_count += 0
         else:
             await self.push_frame(frame, direction)
 
@@ -169,7 +169,13 @@ async def main(room_url: str, token: str, config: dict):
             gst,  # GStreamer file source
             rtvi,
             ParallelPipeline(
-                [ir, va, moondream, text_filter, alert],
+                [
+                    ir,
+                    va,
+                    moondream,
+                    text_filter,
+                    alert,
+                ],
                 [],
             ),
             transport.output(),
