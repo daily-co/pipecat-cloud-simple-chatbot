@@ -73,21 +73,24 @@ class UserImageRequester(FrameProcessor):
     def __init__(self, prompt: str):
         super().__init__()
         self._prompt = prompt
+        self._frame_count = 0
 
     async def process_frame(self, frame: Frame, direction: FrameDirection):
         await super().process_frame(frame, direction)
 
         if isinstance(frame, OutputImageRawFrame):
-            await self.push_frame(frame)
-            # logger.info(f"UserImageRequester received image frame with size: {frame.size}")
-            text_frame = TextFrame(self._prompt)
-            await self.push_frame(text_frame)
-            input_frame = InputImageRawFrame(
-                image=frame.image,
-                size=frame.size,
-                format=frame.format,
-            )
-            await self.push_frame(input_frame)
+            if self._frame_count == 15:  # Every 15 frames
+                text_frame = TextFrame(self._prompt)
+                await self.push_frame(text_frame)
+                input_frame = InputImageRawFrame(
+                    image=frame.image,
+                    size=frame.size,
+                    format=frame.format,
+                )
+                await self.push_frame(input_frame)
+                self._frame_count = 0
+            else:
+                self._frame_count += 1
         else:
             await self.push_frame(frame, direction)
 
@@ -150,7 +153,7 @@ async def main(room_url: str, token: str, config: dict):
 
     # If you run into weird description, try with use_cpu=True
     moondream = MoondreamService(
-        use_cpu=True,  # Set to True to run on CPU
+        # use_cpu=True,  # Set to True to run on CPU
         api_key=os.environ.get("MOONDREAM_API_KEY", ""),
     )
 
@@ -166,9 +169,10 @@ async def main(room_url: str, token: str, config: dict):
             gst,  # GStreamer file source
             rtvi,
             ParallelPipeline(
-                [ir, va, moondream, alert, text_filter, transport.output()],
-                [transport.output()],
+                [ir, va, moondream, text_filter, alert],
+                [],
             ),
+            transport.output(),
         ]
     )
 
