@@ -153,6 +153,7 @@ async def main(room_url: str, token: str, config: dict):
 
     # If you run into weird description, try with use_cpu=True
     moondream = MoondreamService(
+        revision="2025-03-27",
         # use_cpu=True,  # Set to True to run on CPU
         api_key=os.environ.get("MOONDREAM_API_KEY", ""),
     )

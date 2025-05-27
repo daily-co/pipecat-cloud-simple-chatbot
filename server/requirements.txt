@@ -3,3 +3,4 @@ fastapi[all]
 uvicorn
 pipecat-ai[daily,gstreamer,moondream]
 pipecatcloud
+pyvips[binary]==3.0.0
