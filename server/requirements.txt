@@ -4,3 +4,5 @@ uvicorn==0.32.1
 pipecat-ai[daily,cartesia,openai,silero]==0.0.71
 pipecatcloud==0.1.6
 pipecat-ai-flows==0.0.17
+python-multipart
+
