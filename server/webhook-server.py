@@ -153,7 +153,7 @@ async def dial(request: RoomRequest, raw_request: Request):
         logger.debug(f"Populated dialin_settings from request: {dialin_settings}")
 
     daily_room_properties = {
-        "enable_dialout": request.dialout_settings is not None,
+        "enable_dialout": True,
     }
 
     if dialin_settings is not None:

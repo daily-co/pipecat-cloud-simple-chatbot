@@ -1,7 +1,7 @@
 
 fastapi[all]
 pipecat-ai-flows==0.0.17
-pipecat-ai[daily,cartesia,openai,silero]==0.0.71
+pipecat-ai[daily,cartesia,google,openai,silero]==0.0.71
 pipecatcloud==0.1.6
 python-dotenv
 python-multipart
