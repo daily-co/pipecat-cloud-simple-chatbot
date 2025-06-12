@@ -41,9 +41,6 @@ load_dotenv(override=True)
 # logger.remove(0)
 # logger.add(sys.stderr, level="DEBUG")
 
-daily_api_key = os.getenv("DAILY_API_KEY", "")
-daily_api_url = os.getenv("DAILY_API_URL", "https://api.daily.co/v1")
-
 
 class SessionManager:
     """Centralized management of session IDs and state for all call participants."""
@@ -262,7 +259,6 @@ async def bot(session_args: DailySessionArguments) -> None:
     )
     logger.debug(f"Dial-in settings: {daily_dialin_settings}")
     transport_params = DailyParams(
-        api_key=daily_api_key,
         dialin_settings=daily_dialin_settings,
         audio_in_enabled=True,
         audio_out_enabled=True,
