@@ -1,8 +1,8 @@
-agent_name = "simple-chatbot"
-image = "your-docker-hub-username/simple-chatbot:0.1"
-image_credentials = "your-dockerhub-creds"
-secret_set = "simple-chatbot-secrets"
+agent_name = "phone-bot"
+image = "hushdaily/phone-bot:0.1"
+image_credentials = "my-image-pull-secret"
+secret_set = "phone-bot-secrets"
 enable_krisp = true
 
 [scaling]
-  min_instances = 0
+  min_instances = 1

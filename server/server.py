@@ -177,9 +177,7 @@ async def handle_incoming_daily_webhook(request: Request) -> JSONResponse:
 
         # Create a Daily room with dial-in capabilities
         try:
-            room_details = await create_daily_room(
-                request.app.state.session, caller_phone
-            )
+            room_details = await create_daily_room(caller_phone=caller_phone)
         except Exception as e:
             print(f"Error creating Daily room: {e}")
             raise HTTPException(

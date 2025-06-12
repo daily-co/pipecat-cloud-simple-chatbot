@@ -587,7 +587,14 @@ async def main():
         parser.print_help()
         sys.exit(1)
 
-    await bot(args.url, args.token, args.body)
+    session_args = DailySessionArguments(
+        room_url=args.url,
+        token=args.token,
+        body=args.body,
+        session_id=None,  # No session ID needed for local testing
+    )
+
+    await bot(session_args)
 
 
 if __name__ == "__main__":
