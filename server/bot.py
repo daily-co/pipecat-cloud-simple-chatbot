@@ -229,26 +229,28 @@ async def bot(session_args: DailySessionArguments) -> None:
         body: Body passed to the bot from the webhook
 
     """
+    logger.info(f"Starting bot with session arguments: {session_args}")
+
     room_url = session_args.room_url
     token = session_args.token
     body = session_args.body
 
     # ------------ CONFIGURATION AND SETUP ------------
-    logger.info(f"Starting bot with room: {room_url}")
-    logger.info(f"Token: {token}")
-    logger.info(f"Body: {body}")
+    logger.info(f"1 Starting bot with room: {room_url}")
+    logger.info(f"2 Token: {token}")
+    logger.info(f"3 Body: {body}")
     # Parse the body to get the dial-in settings
-    body_data = json.loads(body)
+    body_data = json.loads(body["dialin_settings"])
 
     # Check if the body contains dial-in settings
-    logger.debug(f"Body data: {body_data}")
+    logger.debug(f"4 Body data: {body_data}")
 
-    if not all([body_data.get("callId"), body_data.get("callDomain")]):
+    if not all([body_data.get("call_id"), body_data.get("call_domain")]):
         logger.error("Call ID and Call Domain are required in the body.")
         return None
 
-    call_id = body_data.get("callId")
-    call_domain = body_data.get("callDomain")
+    call_id = body_data.get("call_id")
+    call_domain = body_data.get("call_domain")
     logger.debug(f"Call ID: {call_id}")
     logger.debug(f"Call Domain: {call_domain}")
 
