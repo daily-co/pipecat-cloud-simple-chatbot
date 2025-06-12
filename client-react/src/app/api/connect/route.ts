@@ -1,44 +1,49 @@
-import { NextResponse, NextRequest } from 'next/server';
+/** @format */
+
+import { NextResponse, NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
-  try {
-    const { MY_CUSTOM_DATA } = await request.json();
+	try {
+		const { MY_CUSTOM_DATA } = await request.json();
+		const isLocal = process.env.IS_LOCAL === "TRUE";
 
-    const response = await fetch(
-      `https://api.pipecat.daily.co/v1/public/${process.env.AGENT_NAME}/start`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.PIPECAT_CLOUD_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          // Create Daily room
-          createDailyRoom: true,
-          // Optionally set Daily room properties
-          dailyRoomProperties: { start_video_off: true },
-          // Optionally pass custom data to the bot
-          body: { MY_CUSTOM_DATA },
-        }),
-      }
-    );
+		// Conditionally set the API URL based on IS_LOCAL environment variable
+		const apiUrl = isLocal
+			? "http://127.0.0.1:7860/start"
+			: `https://api.pipecat.daily.co/v1/public/${process.env.AGENT_NAME}/start`;
 
-    if (!response.ok) {
-      throw new Error(`API responded with status: ${response.status}`);
-    }
+		const response = await fetch(apiUrl, {
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${process.env.PIPECAT_CLOUD_API_KEY}`,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				// Create Daily room
+				createDailyRoom: true,
+				// Optionally set Daily room properties
+				dailyRoomProperties: { start_video_off: true },
+				// Optionally pass custom data to the bot
+				body: { MY_CUSTOM_DATA },
+			}),
+		});
 
-    const data = await response.json();
+		if (!response.ok) {
+			throw new Error(`API responded with status: ${response.status}`);
+		}
 
-    // Transform the response to match what RTVI client expects
-    return NextResponse.json({
-      room_url: data.dailyRoom,
-      token: data.dailyToken,
-    });
-  } catch (error) {
-    console.error('API error:', error);
-    return NextResponse.json(
-      { error: 'Failed to start agent' },
-      { status: 500 }
-    );
-  }
+		const data = await response.json();
+
+		// Transform the response to match what RTVI client expects
+		return NextResponse.json({
+			room_url: data.dailyRoom,
+			token: data.dailyToken,
+		});
+	} catch (error) {
+		console.error("API error:", error);
+		return NextResponse.json(
+			{ error: "Failed to start agent" },
+			{ status: 500 }
+		);
+	}
 }
