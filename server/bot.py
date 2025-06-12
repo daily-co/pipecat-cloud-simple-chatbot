@@ -258,15 +258,6 @@ async def bot(session_args: DailySessionArguments) -> None:
         call_id=call_id, call_domain=call_domain
     )
     logger.debug(f"Dial-in settings: {daily_dialin_settings}")
-    transport_params = DailyParams(
-        dialin_settings=daily_dialin_settings,
-        audio_in_enabled=True,
-        audio_out_enabled=True,
-        video_out_enabled=False,
-        vad_analyzer=SileroVADAnalyzer(),
-        transcription_enabled=True,
-    )
-    logger.debug("setup transport params")
 
     # Initialize the session manager
     call_flow_state = CallFlowState()
@@ -275,12 +266,30 @@ async def bot(session_args: DailySessionArguments) -> None:
     # Operator dialout number
     operator_number = os.getenv("OPERATOR_NUMBER", None)
 
+    daily_api_key = os.getenv("DAILY_API_KEY", "")
+    logger.debug(f"Daily API Key: {daily_api_key}")
+
+    # Check if we're running locally
+    IS_LOCAL_RUN = os.environ.get("LOCAL_RUN", "0") == "1"
+    if not IS_LOCAL_RUN:
+        from pipecat.audio.filters.krisp_filter import KrispFilter
+
     # Initialize transport
     transport = DailyTransport(
-        room_url,
-        token,
-        "Call Transfer Bot",
-        transport_params,
+        room_url=room_url,
+        token=token,
+        bot_name="Transfer Bot",
+        params=DailyParams(
+            api_key=daily_api_key,
+            audio_in_enabled=True,  # Enable input audio for the bot
+            audio_in_filter=None
+            if IS_LOCAL_RUN
+            else KrispFilter(),  # Only use Krisp in production
+            audio_out_enabled=True,  # Enable output audio for the bot
+            dialin_settings=daily_dialin_settings,  # Received from the {service}/start body
+            transcription_enabled=True,  # Enable transcription for the user
+            vad_analyzer=SileroVADAnalyzer(),  # Use the Silero VAD analyzer
+        ),
     )
 
     # Initialize TTS
@@ -611,6 +620,10 @@ async def main():
     )
 
     await bot(session_args)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
 
 
 if __name__ == "__main__":

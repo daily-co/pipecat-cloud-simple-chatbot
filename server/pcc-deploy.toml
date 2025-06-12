@@ -1,5 +1,5 @@
 agent_name = "phone-bot"
-image = "hushdaily/phone-bot:0.4"
+image = "hushdaily/phone-bot:latest"
 image_credentials = "my-image-pull-secret"
 secret_set = "phone-bot-secrets"
 enable_krisp = true

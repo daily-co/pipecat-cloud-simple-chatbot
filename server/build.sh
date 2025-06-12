@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="0.4"
+VERSION="0.6"
 DOCKER_USERNAME="hushdaily"
 AGENT_NAME="phone-bot"
 
