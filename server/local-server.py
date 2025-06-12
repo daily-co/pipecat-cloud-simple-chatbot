@@ -76,7 +76,12 @@ async def handle_incoming_daily_webhook(request: Request) -> JSONResponse:
         token = room_details["token"]
         print(f"Created Daily room: {room_url} with token: {token}")
 
-        body_json = json.dumps(data)
+        body_data = {
+            "dialin_settings": data,
+            "dialout_settings": data.get("dialout_settings", {}),
+        }
+
+        body_json = json.dumps(body_data)
 
         bot_cmd = f"python3 -m bot -u {room_url} -t {token} -b {shlex.quote(body_json)}"
 
@@ -120,4 +125,4 @@ if __name__ == "__main__":
     # Run the server
     port = int(os.getenv("PORT", "7860"))
     print(f"Starting server on port {port}")
-    uvicorn.run("server:app", host="0.0.0.0", port=port, reload=True)
+    uvicorn.run("local-server:app", host="0.0.0.0", port=port, reload=True)

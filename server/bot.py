@@ -5,6 +5,7 @@
 #
 import argparse
 import asyncio
+import json
 import os
 import sys
 
@@ -41,7 +42,7 @@ from pipecatcloud import DailySessionArguments
 load_dotenv(override=True)
 
 # logger.remove(0)
-# logger.add(sys.stderr, level="DEBUG")
+logger.add(sys.stderr, level="DEBUG")
 
 
 class SessionManager:
@@ -243,12 +244,12 @@ async def bot(session_args: DailySessionArguments) -> None:
     # Check if the body contains dial-in settings
     logger.debug(f"4 Body data: {body_data}")
 
-    if not all([body_data.get("call_id"), body_data.get("call_domain")]):
+    if not all([body_data.get("callId"), body_data.get("callDomain")]):
         logger.error("Call ID and Call Domain are required in the body.")
         return None
 
-    call_id = body_data.get("call_id")
-    call_domain = body_data.get("call_domain")
+    call_id = body_data.get("callId")
+    call_domain = body_data.get("callDomain")
     logger.debug(f"Call ID: {call_id}")
     logger.debug(f"Call Domain: {call_domain}")
 
@@ -272,8 +273,8 @@ async def bot(session_args: DailySessionArguments) -> None:
     logger.debug(f"Daily API Key: {daily_api_key}")
 
     # Check if we're running locally
-    IS_LOCAL_RUN = os.environ.get("LOCAL_RUN", "0") == "1"
-    if not IS_LOCAL_RUN:
+    IS_LOCAL = os.environ.get("IS_LOCAL", "0") == "1"
+    if not IS_LOCAL:
         from pipecat.audio.filters.krisp_filter import KrispFilter
 
     # Initialize transport
@@ -285,7 +286,7 @@ async def bot(session_args: DailySessionArguments) -> None:
             api_key=daily_api_key,
             audio_in_enabled=True,  # Enable input audio for the bot
             audio_in_filter=None
-            if IS_LOCAL_RUN
+            if IS_LOCAL
             else KrispFilter(),  # Only use Krisp in production
             audio_out_enabled=True,  # Enable output audio for the bot
             dialin_settings=daily_dialin_settings,  # Received from the {service}/start body
@@ -622,10 +623,42 @@ async def main():
     await bot(session_args)
 
 
-if __name__ == "__main__":
-    asyncio.run(main())
+def main_cli():
+    """Parse command line arguments and launch the bot."""
+    parser = argparse.ArgumentParser(description="Pipecat Bot")
+    parser.add_argument("-u", "--url", type=str, required=True, help="Daily room URL")
+    parser.add_argument(
+        "-t", "--token", type=str, required=True, help="Daily room token"
+    )
+    parser.add_argument(
+        "-b",
+        "--body",
+        type=str,
+        required=False,
+        default="{}",
+        help="Configuration JSON string",
+    )
+
+    args = parser.parse_args()
+
+    # Parse the body JSON string into a dictionary
+    try:
+        body_dict = json.loads(args.body) if args.body else {}
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse body JSON: {e}")
+        body_dict = {}
+
+    # Create session arguments
+    session_args = DailySessionArguments(
+        room_url=args.url,
+        token=args.token,
+        body=body_dict,
+        session_id=None,
+    )
+
+    # Run the bot
+    asyncio.run(bot(session_args))
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
-    asyncio.run(main())
+    main_cli()
