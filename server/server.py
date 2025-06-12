@@ -21,9 +21,10 @@ from typing import Any, Dict
 
 import aiohttp
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
+from utils.daily_helpers import create_daily_room
 
 # Load environment variables from .env file
 load_dotenv(override=True)
@@ -73,7 +74,9 @@ async def create_room_and_token() -> tuple[str, str]:
 
         token = await daily_helpers["rest"].get_token(room_url)
         if not token:
-            raise HTTPException(status_code=500, detail=f"Failed to get token for room: {room_url}")
+            raise HTTPException(
+                status_code=500, detail=f"Failed to get token for room: {room_url}"
+            )
 
     return room_url, token
 
@@ -146,6 +149,74 @@ async def start_agent():
     room_url, token = await start()
 
     return RedirectResponse(room_url)
+
+
+@app.post("/start")
+async def handle_incoming_daily_webhook(request: Request) -> JSONResponse:
+    """Handle incoming Daily call webhook."""
+    print("Received webhook from Daily")
+
+    # Get the dial-in properties from the request
+    try:
+        data = await request.json()
+        if "test" in data:
+            # Pass through any webhook checks
+            return JSONResponse({"test": True})
+
+        if not all(key in data for key in ["From", "To", "callId", "callDomain"]):
+            raise HTTPException(
+                status_code=400,
+                detail="Missing properties 'From', 'To', 'callId', 'callDomain'",
+            )
+
+        # Extract the caller's phone number
+        caller_phone = str(data.get("From"))
+        print(f"Processing call from {caller_phone}")
+
+        # Create a Daily room with dial-in capabilities
+        try:
+            room_details = await create_daily_room(
+                request.app.state.session, caller_phone
+            )
+        except Exception as e:
+            print(f"Error creating Daily room: {e}")
+            raise HTTPException(
+                status_code=500, detail=f"Failed to create Daily room: {str(e)}"
+            )
+
+        room_url = room_details["room_url"]
+        token = room_details["token"]
+        print(f"Created Daily room: {room_url} with token: {token}")
+
+        body_json = json.dumps(data)
+
+        bot_cmd = f"python3 -m bot -u {room_url} -t {token} -b {shlex.quote(body_json)}"
+
+        try:
+            # CHANGE: Keep stdout/stderr for debugging
+            # Start the bot in the background but capture output
+            subprocess.Popen(
+                bot_cmd,
+                shell=True,
+                # Don't redirect output so we can see logs
+                # stdout=subprocess.DEVNULL,
+                # stderr=subprocess.DEVNULL
+            )
+            print(f"Started bot process with command: {bot_cmd}")
+        except Exception as e:
+            print(f"Error starting bot: {e}")
+            raise HTTPException(
+                status_code=500, detail=f"Failed to start bot: {str(e)}"
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Unexpected error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
+    # Grab a token for the user to join with
+    return JSONResponse({"room_url": room_url, "token": token})
 
 
 @app.post("/connect")
