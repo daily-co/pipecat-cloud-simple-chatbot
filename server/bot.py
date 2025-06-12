@@ -5,7 +5,6 @@
 #
 import argparse
 import asyncio
-import json
 import os
 import sys
 
@@ -240,7 +239,7 @@ async def bot(session_args: DailySessionArguments) -> None:
     logger.info(f"2 Token: {token}")
     logger.info(f"3 Body: {body}")
     # Parse the body to get the dial-in settings
-    body_data = json.loads(body["dialin_settings"])
+    body_data = body["dialin_settings"]
 
     # Check if the body contains dial-in settings
     logger.debug(f"4 Body data: {body_data}")
