@@ -277,8 +277,7 @@ async def bot(session_args: DailySessionArguments) -> None:
     session_manager = SessionManager(call_flow_state)
 
     # Operator dialout number
-    # operator_number = os.getenv("OPERATOR_NUMBER", None)
-    operator_number = "+15592100083"  # James phone number for testing
+    operator_number = os.getenv("OPERATOR_NUMBER", None)
 
     # Initialize transport
     transport = DailyTransport(
