@@ -73,7 +73,9 @@ async def create_room_and_token() -> tuple[str, str]:
 
         token = await daily_helpers["rest"].get_token(room_url)
         if not token:
-            raise HTTPException(status_code=500, detail=f"Failed to get token for room: {room_url}")
+            raise HTTPException(
+                status_code=500, detail=f"Failed to get token for room: {room_url}"
+            )
 
     return room_url, token
 
@@ -162,7 +164,7 @@ async def rtvi_connect() -> Dict[Any, Any]:
     print("Starting bot")
     room_url, token = await start()
 
-    return {"room_url": room_url, "token": token}
+    return {"dailyRoom": room_url, "dailyToken": token}
 
 
 if __name__ == "__main__":
