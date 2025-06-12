@@ -16,7 +16,6 @@ It includes:
 import argparse
 import json
 import os
-import shlex
 import subprocess
 from contextlib import asynccontextmanager
 from typing import Any, Dict
@@ -26,7 +25,13 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
-from utils.daily_helpers import create_daily_room
+from pipecat.transports.services.helpers.daily_rest import (
+    DailyRESTHelper,
+    DailyRoomParams,
+    DailyRoomProperties,
+    DailyRoomSipParams,
+)
+from pipecatcloud.session import Session, SessionParams
 
 # Load environment variables from .env file
 load_dotenv(override=True)
@@ -64,7 +69,6 @@ async def create_room_and_token() -> tuple[str, str]:
     Raises:
         HTTPException: If room creation or token generation fails.
     """
-    from pipecat.transports.services.helpers.daily_rest import DailyRoomParams
 
     room_url = os.getenv("DAILY_SAMPLE_ROOM_URL", None)
     token = os.getenv("DAILY_SAMPLE_ROOM_TOKEN", None)
@@ -91,7 +95,6 @@ async def lifespan(app: FastAPI):
     - Initializes Daily API helper
     - Cleans up resources on shutdown
     """
-    from pipecat.transports.services.helpers.daily_rest import DailyRESTHelper
 
     aiohttp_session = aiohttp.ClientSession()
     daily_helpers["rest"] = DailyRESTHelper(
@@ -175,39 +178,109 @@ async def handle_incoming_daily_webhook(request: Request) -> JSONResponse:
         caller_phone = str(data.get("From"))
         print(f"Processing call from {caller_phone}")
 
-        # Create a Daily room with dial-in capabilities
-        try:
-            room_details = await create_daily_room(caller_phone=caller_phone)
-        except Exception as e:
-            print(f"Error creating Daily room: {e}")
+        # Configure SIP parameters
+        sip_params = DailyRoomSipParams(
+            display_name=caller_phone,
+            video=False,
+            sip_mode="dial-in",
+            num_endpoints=1,
+        )
+
+        # Create room properties with SIP enabled
+        daily_room_properties = DailyRoomProperties(
+            sip=sip_params,
+            enable_dialout=True,  # Needed for outbound calls if you expand the bot
+            enable_chat=False,  # No need for chat in a voice bot
+            start_video_off=True,  # Voice only
+        )
+
+        # Create session object
+        api_key = os.getenv("PIPECAT_CLOUD_API_KEY", "")
+        if not api_key:
             raise HTTPException(
-                status_code=500, detail=f"Failed to create Daily room: {str(e)}"
+                status_code=500,
+                detail="PIPECAT_CLOUD_API_KEY environment variable is not set",
             )
 
-        room_url = room_details["room_url"]
-        token = room_details["token"]
-        print(f"Created Daily room: {room_url} with token: {token}")
+        print(
+            f"Creating session with agent_name: phone-bot, api_key length: {len(api_key)}"
+        )
+
+        session = Session(
+            agent_name="phone-bot",
+            api_key=api_key,
+            params=SessionParams(
+                use_daily=True,  # Optional: Creates a Daily room
+                daily_room_properties=daily_room_properties,
+                data=data,
+            ),
+        )
+
+        print("Starting Pipecat Cloud session...")
+
+        # Start the session
+        response = await session.start()
+
+        print(f"Session response: {response}")
+
+        # Check if session creation was successful
+        if not response:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to start Pipecat Cloud session - response is None",
+            )
+
+        # Validate response has required fields
+        if "dailyRoom" not in response or "dailyToken" not in response:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Invalid session response - missing required fields. Response: {response}",
+            )
+
+        # Get Daily room URL
+        # daily_url = f"{response['dailyRoom']}?t={response['dailyToken']}"
+        # print(f"Join Daily room: {daily_url}")
+
+        room_url = response["dailyRoom"]
+        token = response["dailyToken"]
+
+        # Create a Daily room with dial-in capabilities
+        # try:
+        #     room_details = await create_daily_room(caller_phone=caller_phone)
+        # except Exception as e:
+        #     print(f"Error creating Daily room: {e}")
+        #     raise HTTPException(
+        #         status_code=500, detail=f"Failed to create Daily room: {str(e)}"
+        #     )
+
+        # room_url = room_details["room_url"]
+        # token = room_details["token"]
+        # print(f"Created Daily room: {room_url} with token: {token}")
 
         body_json = json.dumps(data)
 
-        bot_cmd = f"python3 -m bot -u {room_url} -t {token} -b {shlex.quote(body_json)}"
+        print(
+            f"Starting bot with room URL: {room_url}, token: {token}, body: {body_json}"
+        )
 
-        try:
-            # CHANGE: Keep stdout/stderr for debugging
-            # Start the bot in the background but capture output
-            subprocess.Popen(
-                bot_cmd,
-                shell=True,
-                # Don't redirect output so we can see logs
-                # stdout=subprocess.DEVNULL,
-                # stderr=subprocess.DEVNULL
-            )
-            print(f"Started bot process with command: {bot_cmd}")
-        except Exception as e:
-            print(f"Error starting bot: {e}")
-            raise HTTPException(
-                status_code=500, detail=f"Failed to start bot: {str(e)}"
-            )
+        # bot_cmd = f"python3 -m bot -u {room_url} -t {token} -b {shlex.quote(body_json)}"
+
+        # try:
+        #     # CHANGE: Keep stdout/stderr for debugging
+        #     # Start the bot in the background but capture output
+        #     subprocess.Popen(
+        #         bot_cmd,
+        #         shell=True,
+        #         # Don't redirect output so we can see logs
+        #         # stdout=subprocess.DEVNULL,
+        #         # stderr=subprocess.DEVNULL
+        #     )
+        #     print(f"Started bot process with command: {bot_cmd}")
+        # except Exception as e:
+        #     print(f"Error starting bot: {e}")
+        #     raise HTTPException(
+        #         status_code=500, detail=f"Failed to start bot: {str(e)}"
+        #     )
 
     except HTTPException:
         raise
@@ -243,7 +316,7 @@ if __name__ == "__main__":
     default_host = os.getenv("HOST", "0.0.0.0")
     default_port = int(os.getenv("FAST_API_PORT", "7860"))
 
-    parser = argparse.ArgumentParser(description="Daily Simple Chatbot Server")
+    parser = argparse.ArgumentParser(description="Daily Phone Bot Server")
     parser.add_argument("--host", type=str, default=default_host, help="Host address")
     parser.add_argument("--port", type=int, default=default_port, help="Port number")
     parser.add_argument("--reload", action="store_true", help="Reload code on change")
