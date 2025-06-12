@@ -261,7 +261,6 @@ async def bot(session_args: DailySessionArguments) -> None:
     )
     logger.debug(f"Dial-in settings: {daily_dialin_settings}")
     transport_params = DailyParams(
-        api_url=daily_api_url,
         api_key=daily_api_key,
         dialin_settings=daily_dialin_settings,
         audio_in_enabled=True,

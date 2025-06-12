@@ -15,23 +15,35 @@ It includes:
 
 import argparse
 import json
+
+# Configure loguru for detailed logging
 import os
 import subprocess
+import sys
 from contextlib import asynccontextmanager
 from typing import Any, Dict
 
 import aiohttp
+import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
+from loguru import logger
 from pipecat.transports.services.helpers.daily_rest import (
     DailyRESTHelper,
     DailyRoomParams,
     DailyRoomProperties,
     DailyRoomSipParams,
 )
-from pipecatcloud.session import Session, SessionParams
+from pipecatcloud import AgentStartError
+
+# Remove default loguru handler and add our custom one with detailed format
+logger.remove()
+logger.add(
+    sys.stderr,
+    level="TRACE",
+)
 
 # Load environment variables from .env file
 load_dotenv(override=True)
@@ -150,7 +162,7 @@ async def start_agent():
     Returns:
         RedirectResponse: A response that redirects to the room URL.
     """
-    print("Starting bot")
+    logger.info("Starting bot agent")
     room_url, token = await start()
 
     return RedirectResponse(room_url)
@@ -159,7 +171,7 @@ async def start_agent():
 @app.post("/start")
 async def handle_incoming_daily_webhook(request: Request) -> JSONResponse:
     """Handle incoming Daily call webhook."""
-    print("Received webhook from Daily")
+    logger.info("Received webhook from Daily")
 
     # Get the dial-in properties from the request
     try:
@@ -176,7 +188,7 @@ async def handle_incoming_daily_webhook(request: Request) -> JSONResponse:
 
         # Extract the caller's phone number
         caller_phone = str(data.get("From"))
-        print(f"Processing call from {caller_phone}")
+        logger.info(f"Processing call from {caller_phone}")
 
         # Configure SIP parameters
         sip_params = DailyRoomSipParams(
@@ -202,26 +214,49 @@ async def handle_incoming_daily_webhook(request: Request) -> JSONResponse:
                 detail="PIPECAT_CLOUD_API_KEY environment variable is not set",
             )
 
-        print(
+        logger.debug(
             f"Creating session with agent_name: phone-bot, api_key length: {len(api_key)}"
         )
+        logger.trace(f"Webhook data: {data}")
 
-        session = Session(
-            agent_name="phone-bot",
-            api_key=api_key,
-            params=SessionParams(
-                use_daily=True,  # Optional: Creates a Daily room
-                daily_room_properties=daily_room_properties,
-                data=data,
-            ),
-        )
+        pcc_api_key = os.getenv("PIPECAT_CLOUD_API_KEY")
+        agent_name = os.getenv("AGENT_NAME", "phone-bot")
 
-        print("Starting Pipecat Cloud session...")
+        if not pcc_api_key:
+            raise HTTPException(
+                status_code=500, detail="DAILY_API_KEY environment variable is not set"
+            )
 
-        # Start the session
-        response = await session.start()
+        headers = {
+            "Authorization": f"Bearer {pcc_api_key}",
+            "Content-Type": "application/json",
+        }
 
-        print(f"Session response: {response}")
+        url = f"https://api.pipecat.daily.co/v1/public/{agent_name}/start"
+
+        logger.debug(f"Making API call to Daily: {url} {headers} {data}")
+
+        try:
+            response = requests.post(url, json=data, headers=headers)
+            response.raise_for_status()
+            response_data = response.json()
+            logger.debug(f"Response: {response_data}")
+            return {
+                "status": "success",
+                "data": response_data,
+                "room_properties": daily_room_properties,
+            }
+        except requests.exceptions.HTTPError as e:
+            # Pass through the status code and error details from the Daily API
+            status_code = e.response.status_code
+            error_detail = e.response.json() if e.response.content else str(e)
+            logger.error(f"HTTP error: {error_detail}")
+            raise HTTPException(status_code=status_code, detail=error_detail)
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request error: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+        logger.debug(f"Session response type: {type(response)}, content: {response}")
 
         # Check if session creation was successful
         if not response:
@@ -259,9 +294,8 @@ async def handle_incoming_daily_webhook(request: Request) -> JSONResponse:
 
         body_json = json.dumps(data)
 
-        print(
-            f"Starting bot with room URL: {room_url}, token: {token}, body: {body_json}"
-        )
+        logger.info(f"Starting bot with room URL: {room_url}, token: {token}")
+        logger.trace(f"Body JSON: {body_json}")
 
         # bot_cmd = f"python3 -m bot -u {room_url} -t {token} -b {shlex.quote(body_json)}"
 
@@ -281,11 +315,13 @@ async def handle_incoming_daily_webhook(request: Request) -> JSONResponse:
         #     raise HTTPException(
         #         status_code=500, detail=f"Failed to start bot: {str(e)}"
         #     )
-
+    except AgentStartError as e:
+        logger.error(f"Error starting agent: {e}")
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Unexpected error: {str(e)}")
+        logger.error(f"Unexpected error: {str(e)}")
+        logger.exception("Full exception details:")
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
     # Grab a token for the user to join with
@@ -303,7 +339,7 @@ async def rtvi_connect() -> Dict[Any, Any]:
     Returns:
         Dict[Any, Any]: A dictionary containing the room URL and token.
     """
-    print("Starting bot")
+    logger.info("Starting bot for RTVI connect")
     room_url, token = await start()
 
     return {"room_url": room_url, "token": token}

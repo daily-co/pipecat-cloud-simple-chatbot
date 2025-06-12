@@ -1,8 +1,9 @@
-python-dotenv
+
 fastapi[all]
-uvicorn==0.32.1
+pipecat-ai-flows==0.0.17
 pipecat-ai[daily,cartesia,openai,silero]==0.0.71
 pipecatcloud==0.1.6
-pipecat-ai-flows==0.0.17
+python-dotenv
 python-multipart
-
+requests==2.32.4
+uvicorn==0.32.1
