@@ -1,9 +1,10 @@
 
 fastapi[all]
 pipecat-ai-flows==0.0.17
-pipecat-ai[daily,cartesia,google,openai,silero]==0.0.71
+pipecat-ai[daily,cartesia,google,openai,silero,tracing]==0.0.71
 pipecatcloud==0.1.6
 python-dotenv
 python-multipart
 requests==2.32.4
 uvicorn==0.32.1
+opentelemetry-exporter-otlp-proto-grpc
