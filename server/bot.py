@@ -4,44 +4,21 @@
 # SPDX-License-Identifier: BSD 2-Clause License
 #
 
-"""OpenAI Bot Implementation.
-
-This module implements a chatbot using OpenAI's GPT-4 model for natural language
-processing. It includes:
-- Real-time audio/video interaction through Daily
-- Animated robot avatar
-- Text-to-speech using ElevenLabs
-- Support for both English and Spanish
-
-The bot runs as part of a pipeline that processes audio/video frames and manages
-the conversation flow.
-"""
+"""OpenAI Bot Implementation."""
 
 import os
+import sys
 
 from dotenv import load_dotenv
 from loguru import logger
-from pipecat.frames.frames import (
-    EndFrame,
-    Frame,
-    InputImageRawFrame,
-    OutputImageRawFrame,
-    TextFrame,
-)
-from pipecat.observers.loggers.debug_log_observer import DebugLogObserver, FrameEndpoint
+from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
-from pipecat.pipeline.task import PipelineTask
-from pipecat.processors.aggregators.vision_image_frame import VisionImageFrameAggregator
-from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
-from pipecat.processors.frameworks.rtvi import (
-    RTVIConfig,
-    RTVIObserver,
-    RTVIProcessor,
-    RTVIServerMessageFrame,
-)
-from pipecat.processors.gstreamer.pipeline_source import GStreamerPipelineSource
-from pipecat.services.moondream.vision import MoondreamService
+from pipecat.pipeline.task import PipelineParams, PipelineTask
+from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
+from pipecat.processors.frameworks.rtvi import RTVIConfig, RTVIObserver, RTVIProcessor
+from pipecat.services.cartesia.tts import CartesiaTTSService
+from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.transports.services.daily import DailyParams, DailyTransport
 from pipecatcloud.agent import DailySessionArguments
 
@@ -50,49 +27,8 @@ load_dotenv(override=True)
 # Check if we're running locally
 IS_LOCAL_RUN = os.environ.get("LOCAL_RUN", "0") == "1"
 
-
-class AlertProcessor(FrameProcessor):
-    def __init__(self):
-        super().__init__()
-
-    async def process_frame(self, frame: Frame, direction: FrameDirection):
-        await super().process_frame(frame, direction)
-
-        if isinstance(frame, TextFrame):
-            text = frame.text.strip().upper()
-            message_frame = RTVIServerMessageFrame(data=text)
-            await self.push_frame(message_frame)
-
-        await self.push_frame(frame, direction)
-
-
-class UserImageRequester(FrameProcessor):
-    def __init__(self, prompt: str):
-        super().__init__()
-        self._prompt = prompt
-
-    async def process_frame(self, frame: Frame, direction: FrameDirection):
-        await super().process_frame(frame, direction)
-
-        if isinstance(frame, OutputImageRawFrame):
-            await self.push_frame(frame)
-            # logger.info(f"UserImageRequester received image frame with size: {frame.size}")
-            text_frame = TextFrame(self._prompt)
-            await self.push_frame(text_frame)
-            input_frame = InputImageRawFrame(
-                image=frame.image,
-                size=frame.size,
-                format=frame.format,
-            )
-            await self.push_frame(input_frame)
-        else:
-            await self.push_frame(frame, direction)
-
-
-default_config = {
-    "location": "rtsp://rtspstream:9bGdZ6NKfRXnMbFAg71al@zephyr.rtsp.stream/people",
-    "prompt": "Are there people in the bottom right corner of the image? Only answer with YES or NO.",
-}
+# Logger for local dev
+logger.add(sys.stderr, level="DEBUG")
 
 
 async def main(room_url: str, token: str, config: dict):
@@ -107,77 +43,110 @@ async def main(room_url: str, token: str, config: dict):
     """
     logger.info(f"Body: {config}")
 
+    if not IS_LOCAL_RUN:
+        from pipecat.audio.filters.krisp_filter import KrispFilter
+
     transport = DailyTransport(
         room_url,
         token,
         "Simple Chatbot",
         DailyParams(
             audio_in_enabled=True,  # Enable input audio for the bot
-            audio_in_filter=None,
+            audio_in_filter=None
+            if IS_LOCAL_RUN
+            else KrispFilter(),  # Only use Krisp in production
             audio_out_enabled=True,  # Enable output audio for the bot
             video_out_enabled=True,  # Enable the video output for the bot
             video_out_width=1024,  # Set the video output width
             video_out_height=576,  # Set the video output height
+            transcription_enabled=True,  # Enable transcription for the user
+            vad_analyzer=SileroVADAnalyzer(),  # Use the Silero VAD analyzer
         ),
     )
 
-    location = config.get("location", "")
-
-    gst = GStreamerPipelineSource(
-        pipeline=(f"rtspsrc location={location} ! decodebin ! autovideosink"),
-        out_params=GStreamerPipelineSource.OutputParams(
-            video_width=1280,
-            video_height=720,
-        ),
+    # Initialize text-to-speech service
+    tts = CartesiaTTSService(
+        api_key=os.getenv("CARTESIA_API_KEY"),
+        voice_id="c45bc5ec-dc68-4feb-8829-6e6b2748095d",  # Movieman
     )
 
+    # Initialize LLM service
+    llm = OpenAILLMService(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4o")
+
+    # Set up initial messages for the bot
+    messages = [
+        {
+            "role": "system",
+            "content": "You are Chatbot, a friendly, helpful robot. Your goal is to demonstrate your capabilities in a succinct way. Your output will be converted to audio so don't include special characters in your answers. Respond to what the user said in a creative and helpful way, but keep your responses brief. Start by introducing yourself.",
+        },
+    ]
+
+    # Set up conversation context and management
+    # The context_aggregator will automatically collect conversation context
+    # Pass your initial messages and tools to the context to initialize the context
+    context = OpenAILLMContext(messages)
+    context_aggregator = llm.create_context_aggregator(context)
+
+    # RTVI events for Pipecat client UI
     rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
 
-    # If you run into weird description, try with use_cpu=True
-    moondream = MoondreamService()
-
-    prompt = config.get("prompt", "")
-    ir = UserImageRequester(prompt)
-    va = VisionImageFrameAggregator()
-    alert = AlertProcessor()
-
+    # Add your processors to the pipeline
     pipeline = Pipeline(
         [
-            gst,  # GStreamer file source
+            transport.input(),
             rtvi,
-            ir,
-            va,
-            moondream,
-            alert,  # Send an email alert or something if the door is open
-            transport.output(),  # Transport bot output
+            context_aggregator.user(),
+            llm,
+            tts,
+            transport.output(),
+            context_aggregator.assistant(),
         ]
     )
 
+    # Create a PipelineTask to manage the pipeline
     task = PipelineTask(
         pipeline,
-        observers=[
-            RTVIObserver(rtvi),
-            DebugLogObserver(
-                frame_types={
-                    # TextFrame: None,
-                    TextFrame: (MoondreamService, FrameEndpoint.SOURCE),
-                    # InputImageRawFrame: None,
-                    EndFrame: None,
-                }
-            ),
-        ],
+        params=PipelineParams(
+            allow_interruptions=True,
+            enable_metrics=True,
+            enable_usage_metrics=True,
+        ),
+        observers=[RTVIObserver(rtvi)],
     )
 
     @rtvi.event_handler("on_client_ready")
     async def on_client_ready(rtvi):
-        logger.info(f"Bot ready: {rtvi}")
+        # Notify the client that the bot is ready
         await rtvi.set_bot_ready()
+        # Kick off the conversation by pushing a context frame to the pipeline
+        await task.queue_frames([context_aggregator.user().get_context_frame()])
 
-    @transport.event_handler("on_client_connected")
-    async def on_client_connected(transport, client):
-        logger.info(f"Client connected: {client}")
+    @transport.event_handler("on_first_participant_joined")
+    async def on_first_participant_joined(transport, participant):
+        # Push a static frame to show the bot is listening
+        logger.debug(f"First participant joined: {participant}")
+        # Capture the first participant's transcription
+        await transport.capture_participant_transcription(participant["id"])
 
-    runner = PipelineRunner(handle_sigint=False)
+    @transport.event_handler("on_participant_joined")
+    async def on_participant_joined(transport, participant):
+        logger.debug(f"Participant joined: {participant}")
+        participant_count = transport.participant_counts()["present"]
+        logger.debug(f"Participant counts: {participant_count}")
+        if participant_count == 3:
+            # If there are 3 participants, start the bot conversation
+            await transport.capture_participant_transcription(participant["id"])
+            await transport.update_participant(
+                participant["id"], {"canSendAudio": True, "canSendVideo": False}
+            )
+
+    @transport.event_handler("on_participant_left")
+    async def on_participant_left(transport, participant, reason):
+        logger.debug(f"Participant left: {participant}")
+        # Cancel the PipelineTask to stop processing
+        # await task.cancel()
+
+    runner = PipelineRunner()
 
     await runner.run(task)
 
@@ -191,7 +160,7 @@ async def bot(args: DailySessionArguments):
         body: The configuration object from the request body
         session_id: The session ID for logging
     """
-    logger.info(f"Bot process initialized {args.room_url} {args.token} {args.body}")
+    logger.info(f"Bot process initialized {args.room_url} {args.token}")
 
     try:
         await main(args.room_url, args.token, args.body)
