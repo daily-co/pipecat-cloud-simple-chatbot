@@ -1,7 +1,7 @@
-agent_name = "simple-chatbot"
-image = "your-docker-hub-username/simple-chatbot:0.1"
-image_credentials = "your-dockerhub-creds"
-secret_set = "simple-chatbot-secrets"
+agent_name = "three-participant-chatbot"
+image = "hushdaily/three-participant-chatbot:0.1"
+image_credentials = "my-image-pull-secret"
+secret_set = "three-participant-chatbot-secrets"
 enable_krisp = true
 
 [scaling]

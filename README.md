@@ -10,7 +10,7 @@ This project demonstrates how to build a complete Pipecat AI agent application w
 - **Client**: Next.js TypeScript web application using the Pipecat React & JS SDKs
 - **Infrastructure**: Deployable to Pipecat Cloud (server) and Vercel (client)
 
-> See the [simple-chatbot example](https://github.com/pipecat-ai/pipecat/tree/main/examples/simple-chatbot) with different client and server implementations.
+> See the [three-participant-chatbot example](https://github.com/pipecat-ai/pipecat/tree/main/examples/three-participant-chatbot) with different client and server implementations.
 
 ## Quick Start (Local run)
 
@@ -48,7 +48,7 @@ Run the server locally to test before deploying:
 python server.py
 ```
 
-> You can join this client via Daily's Prebuilt UI at http://localhost:7860 or follow step 2 to join from the simple-chatbot client.
+> You can join this client via Daily's Prebuilt UI at http://localhost:7860 or follow step 2 to join from the three-participant-chatbot client.
 
 ### 2. Client Setup
 
@@ -111,7 +111,7 @@ chmod +x build.sh
 4. Create a secret set for your API keys:
 
 ```bash
-pcc secrets set simple-chatbot-secrets --file .env
+pcc secrets set three-participant-chatbot-secrets --file .env
 ```
 
 5. Deploy to Pipecat Cloud:
@@ -135,7 +135,7 @@ pcc deploy
 ## Project Structure
 
 ```
-simple-chatbot/
+three-participant-chatbot/
 ├── client-next/            # Next.js client application
 │   ├── src/
 │   │   ├── app/            # Next.js app routes

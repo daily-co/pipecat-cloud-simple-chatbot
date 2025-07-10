@@ -22,7 +22,7 @@ npm install
 
 ```
 PIPECAT_CLOUD_API_KEY=your_pipecat_cloud_key
-AGENT_NAME=simple-chatbot
+AGENT_NAME=three-participant-chatbot
 NEXT_PUBLIC_API_BASE_URL=http://localhost:7860
 ```
 
