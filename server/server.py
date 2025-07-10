@@ -61,7 +61,11 @@ async def create_room_and_token() -> tuple[str, str]:
     Raises:
         HTTPException: If room creation or token generation fails.
     """
-    from pipecat.transports.services.helpers.daily_rest import DailyRoomParams
+    from pipecat.transports.services.helpers.daily_rest import (
+        DailyMeetingTokenParams,
+        DailyMeetingTokenProperties,
+        DailyRoomParams,
+    )
 
     room_url = os.getenv("DAILY_SAMPLE_ROOM_URL", None)
     token = os.getenv("DAILY_SAMPLE_ROOM_TOKEN", None)
@@ -71,9 +75,20 @@ async def create_room_and_token() -> tuple[str, str]:
             raise HTTPException(status_code=500, detail="Failed to create room")
         room_url = room.url
 
-        token = await daily_helpers["rest"].get_token(room_url)
+        token = await daily_helpers["rest"].get_token(
+            room_url=room_url,
+            params=DailyMeetingTokenParams(
+                properties=DailyMeetingTokenProperties(
+                    is_owner=True,
+                    start_video_off=True,
+                    start_audio_off=True,
+                )
+            ),
+        )
         if not token:
-            raise HTTPException(status_code=500, detail=f"Failed to get token for room: {room_url}")
+            raise HTTPException(
+                status_code=500, detail=f"Failed to get token for room: {room_url}"
+            )
 
     return room_url, token
 
