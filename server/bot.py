@@ -125,26 +125,27 @@ async def main(room_url: str, token: str, config: dict):
     async def on_first_participant_joined(transport, participant):
         # Push a static frame to show the bot is listening
         logger.debug(f"First participant joined: {participant}")
+        participant_id = participant["id"]
         # Capture the first participant's transcription
-        await transport.capture_participant_transcription(participant["id"])
+        await transport.capture_participant_transcription(participant_id)
+        # Mute a participant's microphone
+        await transport.update_remote_participants(
+            {participant_id: {"inputsEnabled": {"microphone": False}}}
+        )
 
     @transport.event_handler("on_participant_joined")
     async def on_participant_joined(transport, participant):
-        logger.debug(f"Participant joined: {participant}")
         participant_count = transport.participant_counts()["present"]
-        logger.debug(f"Participant counts: {participant_count}")
         if participant_count == 3:
-            # If there are 3 participants, start the bot conversation
             await transport.capture_participant_transcription(participant["id"])
-            await transport.update_participant(
-                participant["id"], {"canSendAudio": True, "canSendVideo": False}
-            )
 
     @transport.event_handler("on_participant_left")
     async def on_participant_left(transport, participant, reason):
         logger.debug(f"Participant left: {participant}")
-        # Cancel the PipelineTask to stop processing
-        # await task.cancel()
+        participant_count = transport.participant_counts()["present"]
+        if participant_count == 1:
+            # Cancel the PipelineTask to stop processing
+            await task.cancel()
 
     runner = PipelineRunner()
 
