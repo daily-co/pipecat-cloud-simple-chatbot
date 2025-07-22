@@ -246,7 +246,7 @@ async def main(room_url: str, token: str, config: dict):
         # Cancel the PipelineTask to stop processing
         await task.cancel()
 
-    runner = PipelineRunner()
+    runner = PipelineRunner(handle_sigint=False, force_gc=True)
 
     await runner.run(task)
 
