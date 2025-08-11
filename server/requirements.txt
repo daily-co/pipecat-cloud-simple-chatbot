@@ -1,5 +1,2 @@
-python-dotenv
-fastapi[all]
-uvicorn
-pipecat-ai[daily,cartesia,openai,silero]
-pipecatcloud
+pipecat-ai[daily,cartesia,openai,silero,runner]>=0.0.79
+pipecatcloud>=0.2.1

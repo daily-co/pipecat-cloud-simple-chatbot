@@ -14,71 +14,74 @@ This project demonstrates how to build a complete Pipecat AI agent application w
 
 ## Quick Start (Local run)
 
-### 1. Server Setup
+You'll need two terminal windows open to run locally.
 
-Navigate to the server directory:
+### Terminal 1: Server Setup
 
-```bash
-cd server
-```
+1. Navigate to the server directory:
 
-Create and activate a virtual environment:
+   ```bash
+   cd server
+   ```
 
-```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+2. Make sure you have uv installed:
 
-Install requirements:
+   ```bash
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
 
-```bash
-pip install -r requirements.txt
-```
+   > **Need help?** Refer to the [uv install documentation](https://docs.astral.sh/uv/getting-started/installation/).
 
-Copy env.example to .env and add your API keys:
+3. Create a venv and install example dependencies:
 
-```bash
-cp env.example .env
-# Edit .env to add OPENAI_API_KEY, CARTESIA_API_KEY, and DAILY_API_KEY
-```
+   ```bash
+   uv sync
+   ```
 
-Run the server locally to test before deploying:
+4. Create a `.env` file with your API keys:
 
-```bash
-python server.py
-```
+   ```bash
+   cp env.example .env
+   # Edit .env with your API keys
+   ```
 
-> You can join this client via Daily's Prebuilt UI at http://localhost:7860 or follow step 2 to join from the simple-chatbot client.
+5. Run the bot:
 
-### 2. Client Setup
+   ```bash
+   python bot.py -t daily
+   ```
 
-In a separate terminal, navigate to the client directory:
+   > You can join this client via Daily's Prebuilt UI at http://localhost:7860 or follow step 2 to join from the simple-chatbot client.
 
-```bash
-cd client-react
-```
+### Terminal 2: Client Setup
 
-Install dependencies:
+1. In a separate terminal, navigate to the client directory:
 
-```bash
-npm install
-```
+   ```bash
+   cd client-react
+   ```
 
-Create `.env.local` file and add your `PIPECAT_CLOUD_API_KEY`:
+2. Install dependencies:
 
-```bash
-cp env.local.example .env.local
-```
+   ```bash
+   npm install
+   ```
 
-> Create a Pipecat Cloud API public key using the dashboard. This key is still a secret, so protect it. It's meant to launch your Pipecat apps.
+Create `.env.local` file and add your `PIPECAT_CLOUD_API_KEY` and `AGENT_NAME`:
 
-Run the client app:
+    ```bash
+    cp env.local.example .env.local
+    ```
 
-```bash
-npm run dev
-```
+    > Create a Pipecat Cloud API public key using the dashboard. This key is still a secret, so protect it. It's meant to launch your Pipecat apps.
 
-Open [http://localhost:3000](http://localhost:3000) to interact with your agent through the Next.js client.
+4. Run the client app:
+
+   ```bash
+   npm run dev
+   ```
+
+5. Open [http://localhost:3000](http://localhost:3000) to interact with your agent through the Next.js client.
 
 ## Deployment
 
@@ -88,39 +91,43 @@ Open [http://localhost:3000](http://localhost:3000) to interact with your agent 
 
 1. Install the Pipecat Cloud CLI:
 
-```bash
-pip install pipecatcloud
-```
+   ```bash
+   uv pip install pipecatcloud
+   ```
 
 2. Authenticate:
 
-```bash
-pcc auth login
-```
+   ```bash
+   uv run pcc auth login
+   ```
 
-3. Build and push your Docker image:
+3. From the `server` directory, build and push your Docker image:
 
-```bash
-cd server
-chmod +x build.sh
-./build.sh
-```
+   ```bash
+   cd server
+   chmod +x build.sh
+   ./build.sh
+   ```
 
-> IMPORTANT: Before running this build script, you need to add your DOCKER_USERNAME
+   > IMPORTANT: Before running this build script, you need to add your DOCKER_USERNAME to build.sh
 
 4. Create a secret set for your API keys:
 
-```bash
-pcc secrets set simple-chatbot-secrets --file .env
-```
+   ```bash
+   uv run pcc secrets set simple-chatbot-secrets --file .env
+   ```
 
 5. Deploy to Pipecat Cloud:
 
-```bash
-pcc deploy
-```
+   ```bash
+   uv run pcc deploy
+   ```
 
-> IMPORTANT: Before deploying, you need to add your Docker Hub username
+   > IMPORTANT: Before deploying, you need to add your DOCKER_USERNAME and DOCKER_CREDENTIALS. Learn how to [add an image pull secret](https://docs.pipecat.daily.co/agents/secrets#image-pull-secrets).
+
+### Test using Pipecat Cloud Sandbox
+
+You can test your deployment to ensure everything is working using the Pipecat Cloud Sandbox in your [Pipecat Cloud Dashboard](https://pipecat.daily.co).
 
 ### Deploy Client to Vercel
 
@@ -144,7 +151,6 @@ simple-chatbot/
 │   │   ├── components/     # React components
 │   │   └── providers/      # React providers including RTVIProvider
 │   ├── package.json
-│   └── README.md          # Client-specific documentation
 │
 └── server/                # Pipecat bot server
     ├── assets/            # Robot animation frames
@@ -153,7 +159,4 @@ simple-chatbot/
     ├── build.sh           # Script for building and pushing Docker image
     ├── requirements.txt   # Python dependencies
     ├── pcc-deploy.toml    # Pipecat Cloud deployment config
-    ├── runner.py          # Local dev only: A runner that launches
-    ├── server.py          # Local dev only: A FastAPI server to handle inbound requests
-    └── README.md          # Server-specific documentation
 ```

@@ -22,8 +22,6 @@ import os
 from dotenv import load_dotenv
 from loguru import logger
 from PIL import Image
-from pipecat.adapters.schemas.function_schema import FunctionSchema
-from pipecat.adapters.schemas.tools_schema import ToolsSchema
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.frames.frames import (
     BotStartedSpeakingFrame,
@@ -31,7 +29,6 @@ from pipecat.frames.frames import (
     Frame,
     OutputImageRawFrame,
     SpriteFrame,
-    TTSSpeakFrame,
 )
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
@@ -39,18 +36,13 @@ from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.processors.frameworks.rtvi import RTVIConfig, RTVIObserver, RTVIProcessor
-from pipecat.services.cartesia.tts import CartesiaTTSService
+from pipecat.runner.types import RunnerArguments
+from pipecat.services.cartesia import CartesiaTTSService
 from pipecat.services.openai.llm import OpenAILLMService
+from pipecat.transports.base_transport import BaseTransport
 from pipecat.transports.services.daily import DailyParams, DailyTransport
-from pipecatcloud.agent import DailySessionArguments
 
 load_dotenv(override=True)
-
-# Check if we're running locally
-IS_LOCAL_RUN = os.environ.get("LOCAL_RUN", "0") == "1"
-
-# Logger for local dev
-# logger.add(sys.stderr, level="DEBUG")
 
 sprites = []
 script_dir = os.path.dirname(__file__)
@@ -106,46 +98,21 @@ class TalkingAnimation(FrameProcessor):
         await self.push_frame(frame, direction)
 
 
-async def fetch_weather_from_api(function_name, tool_call_id, args, llm, context, result_callback):
-    """Fetch weather data dummy function.
-
-    This function simulates fetching weather data from an external API.
-    It demonstrates how to call an external service from the language model.
-    """
-    await llm.push_frame(TTSSpeakFrame("Let me check on that."))
-    await result_callback({"conditions": "nice", "temperature": "75"})
-
-
-async def main(room_url: str, token: str, config: dict):
+async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
     """Main bot execution function.
 
     Sets up and runs the bot pipeline including:
-    - Daily video transport
     - Speech-to-text and text-to-speech services
     - Language model integration
     - Animation processing
     - RTVI event handling
     """
-    logger.info(f"Body: {config}")
 
-    if not IS_LOCAL_RUN:
-        from pipecat.audio.filters.krisp_filter import KrispFilter
-
-    transport = DailyTransport(
-        room_url,
-        token,
-        "Simple Chatbot",
-        DailyParams(
-            audio_in_enabled=True,  # Enable input audio for the bot
-            audio_in_filter=None if IS_LOCAL_RUN else KrispFilter(),  # Only use Krisp in production
-            audio_out_enabled=True,  # Enable output audio for the bot
-            video_out_enabled=True,  # Enable the video output for the bot
-            video_out_width=1024,  # Set the video output width
-            video_out_height=576,  # Set the video output height
-            transcription_enabled=True,  # Enable transcription for the user
-            vad_analyzer=SileroVADAnalyzer(),  # Use the Silero VAD analyzer
-        ),
-    )
+    # You can receive custom body data from the client, which is accessed
+    # here as runner_args.body. You can use this to pass in any custom data
+    # you need for your bot, such as a custom prompt or other configuration.
+    body = runner_args.body
+    logger.info(f"Body: {body}")
 
     # Initialize text-to-speech service
     tts = CartesiaTTSService(
@@ -154,35 +121,8 @@ async def main(room_url: str, token: str, config: dict):
     )
 
     # Initialize LLM service
-    llm = OpenAILLMService(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4o")
+    llm = OpenAILLMService(api_key=os.getenv("OPENAI_API_KEY"))
 
-    # Register your function call providing the function name and callback
-    llm.register_function("get_current_weather", fetch_weather_from_api)
-
-    # Define your function call using the FunctionSchema
-    # Learn more about function calling in Pipecat:
-    # https://docs.pipecat.ai/guides/features/function-calling
-    weather_function = FunctionSchema(
-        name="get_current_weather",
-        description="Get the current weather",
-        properties={
-            "location": {
-                "type": "string",
-                "description": "The city and state, e.g. San Francisco, CA",
-            },
-            "format": {
-                "type": "string",
-                "enum": ["celsius", "fahrenheit"],
-                "description": "The temperature unit to use. Infer this from the user's location.",
-            },
-        },
-        required=["location", "format"],
-    )
-
-    # Set up the tools schema with your weather function call
-    tools = ToolsSchema(standard_tools=[weather_function])
-
-    # Set up initial messages for the bot
     messages = [
         {
             "role": "system",
@@ -192,16 +132,16 @@ async def main(room_url: str, token: str, config: dict):
 
     # Set up conversation context and management
     # The context_aggregator will automatically collect conversation context
-    # Pass your initial messages and tools to the context to initialize the context
-    context = OpenAILLMContext(messages, tools)
+    context = OpenAILLMContext(messages)
     context_aggregator = llm.create_context_aggregator(context)
 
     ta = TalkingAnimation()
 
+    #
     # RTVI events for Pipecat client UI
+    #
     rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
 
-    # Add your processors to the pipeline
     pipeline = Pipeline(
         [
             transport.input(),
@@ -215,35 +155,30 @@ async def main(room_url: str, token: str, config: dict):
         ]
     )
 
-    # Create a PipelineTask to manage the pipeline
     task = PipelineTask(
         pipeline,
         params=PipelineParams(
-            allow_interruptions=True,
             enable_metrics=True,
             enable_usage_metrics=True,
         ),
         observers=[RTVIObserver(rtvi)],
     )
+    await task.queue_frame(quiet_frame)
 
     @rtvi.event_handler("on_client_ready")
     async def on_client_ready(rtvi):
-        # Notify the client that the bot is ready
         await rtvi.set_bot_ready()
-        # Kick off the conversation by pushing a context frame to the pipeline
+        # Kick off the conversation
         await task.queue_frames([context_aggregator.user().get_context_frame()])
 
-    @transport.event_handler("on_first_participant_joined")
-    async def on_first_participant_joined(transport, participant):
-        # Push a static frame to show the bot is listening
-        await task.queue_frame(quiet_frame)
-        # Capture the first participant's transcription
+    @transport.event_handler("on_client_connected")
+    async def on_client_connected(transport, participant):
+        logger.info(f"Client connected")
         await transport.capture_participant_transcription(participant["id"])
 
-    @transport.event_handler("on_participant_left")
-    async def on_participant_left(transport, participant, reason):
-        logger.debug(f"Participant left: {participant}")
-        # Cancel the PipelineTask to stop processing
+    @transport.event_handler("on_client_disconnected")
+    async def on_client_disconnected(transport, client):
+        logger.info(f"Client disconnected")
         await task.cancel()
 
     runner = PipelineRunner(handle_sigint=False, force_gc=True)
@@ -251,20 +186,47 @@ async def main(room_url: str, token: str, config: dict):
     await runner.run(task)
 
 
-async def bot(args: DailySessionArguments):
-    """Main bot entry point compatible with Pipecat Cloud.
+async def bot(runner_args: RunnerArguments):
+    """Main bot entry point compatible with Pipecat Cloud."""
 
-    Args:
-        room_url: The Daily room URL
-        token: The Daily room token
-        body: The configuration object from the request body
-        session_id: The session ID for logging
-    """
-    logger.info(f"Bot process initialized {args.room_url} {args.token}")
+    transport = None
+
+    if os.environ.get("ENV") != "local":
+        from pipecat.audio.filters.krisp_filter import KrispFilter
+
+        krisp_filter = KrispFilter()
+    else:
+        krisp_filter = None
+
+    transport = DailyTransport(
+        runner_args.room_url,
+        runner_args.token,
+        "Pipecat Bot",
+        params=DailyParams(
+            audio_in_enabled=True,
+            audio_in_filter=krisp_filter,
+            audio_out_enabled=True,
+            video_out_enabled=True,
+            video_out_width=1024,
+            video_out_height=576,
+            vad_analyzer=SileroVADAnalyzer(),
+            transcription_enabled=True,
+        ),
+    )
+
+    if transport is None:
+        logger.error("Failed to create transport")
+        return
 
     try:
-        await main(args.room_url, args.token, args.body)
+        await run_bot(transport, runner_args)
         logger.info("Bot process completed")
     except Exception as e:
         logger.exception(f"Error in bot process: {str(e)}")
         raise
+
+
+if __name__ == "__main__":
+    from pipecat.runner.run import main
+
+    main()

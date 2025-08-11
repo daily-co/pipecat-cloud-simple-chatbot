@@ -1,16 +1,18 @@
 import {
-  useRTVIClient,
-  useRTVIClientTransportState,
+  usePipecatClient,
+  usePipecatClientTransportState,
 } from '@pipecat-ai/client-react';
 
+const MY_CUSTOM_DATA = { foo: 'bar' };
+
 export function ConnectButton() {
-  const client = useRTVIClient();
-  const transportState = useRTVIClientTransportState();
+  const client = usePipecatClient();
+  const transportState = usePipecatClientTransportState();
   const isConnected = ['connected', 'ready'].includes(transportState);
 
   const handleClick = async () => {
     if (!client) {
-      console.error('RTVI client is not initialized');
+      console.error('Pipecat client is not initialized');
       return;
     }
 
@@ -18,7 +20,10 @@ export function ConnectButton() {
       if (isConnected) {
         await client.disconnect();
       } else {
-        await client.connect();
+        await client.startBotAndConnect({
+          endpoint: '/api/connect',
+          requestData: MY_CUSTOM_DATA,
+        });
       }
     } catch (error) {
       console.error('Connection error:', error);
