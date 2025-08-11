@@ -1,8 +1,8 @@
 agent_name = "simple-chatbot"
-image = "your-docker-hub-username/simple-chatbot:0.1"
-image_credentials = "your-dockerhub-creds"
+image = "DOCKER_USERNAME/simple-chatbot:0.1"
+image_credentials = "DOCKER_CREDENTIALS"
 secret_set = "simple-chatbot-secrets"
 enable_krisp = true
 
 [scaling]
-  min_instances = 0
+  min_agents = 0

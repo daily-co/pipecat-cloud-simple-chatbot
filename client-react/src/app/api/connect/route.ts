@@ -16,7 +16,7 @@ console.log(
 
 export async function POST(request: NextRequest) {
   try {
-    // const { MY_CUSTOM_DATA } = await request.json();
+    const MY_CUSTOM_DATA = await request.json();
 
     // Prepare headers - only add Authorization for cloud
     const headers: Record<string, string> = {
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       headers.Authorization = `Bearer ${process.env.PIPECAT_CLOUD_API_KEY}`;
     }
 
-    const response = await fetch(`${API_BASE_URL}/connect`, {
+    const response = await fetch(`${API_BASE_URL}/start`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
         // Optionally set Daily room properties
         dailyRoomProperties: { start_video_off: true },
         // Optionally pass custom data to the bot
-        // body: { MY_CUSTOM_DATA },
+        body: MY_CUSTOM_DATA,
       }),
     });
 
@@ -50,10 +50,7 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
 
     // Both local and cloud return the same format
-    return NextResponse.json({
-      room_url: data.room_url,
-      token: data.token,
-    });
+    return NextResponse.json(data);
   } catch (error) {
     console.error('API error:', error);
     return NextResponse.json(

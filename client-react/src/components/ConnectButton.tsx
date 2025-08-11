@@ -3,6 +3,8 @@ import {
   usePipecatClientTransportState,
 } from '@pipecat-ai/client-react';
 
+const MY_CUSTOM_DATA = { foo: 'bar' };
+
 export function ConnectButton() {
   const client = usePipecatClient();
   const transportState = usePipecatClientTransportState();
@@ -18,7 +20,10 @@ export function ConnectButton() {
       if (isConnected) {
         await client.disconnect();
       } else {
-        await client.connect({ endpoint: '/api/connect' });
+        await client.startBotAndConnect({
+          endpoint: '/api/connect',
+          requestData: MY_CUSTOM_DATA,
+        });
       }
     } catch (error) {
       console.error('Connection error:', error);

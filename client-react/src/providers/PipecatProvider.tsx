@@ -5,8 +5,6 @@ import { DailyTransport } from '@pipecat-ai/daily-transport';
 import { PipecatClientProvider } from '@pipecat-ai/client-react';
 import { PropsWithChildren, useEffect, useState } from 'react';
 
-// const MY_CUSTOM_DATA = { foo: 'bar' };
-
 export function PipecatProvider({ children }: PropsWithChildren) {
   const [client, setClient] = useState<PipecatClient | null>(null);
 
