@@ -2,8 +2,8 @@
 set -e
 
 VERSION="0.1"
-DOCKER_USERNAME="DOCKER_USERNAME"
-AGENT_NAME="simple-chatbot"
+DOCKER_USERNAME="jamesdaily"
+AGENT_NAME="datadog-chatbot"
 
 # Build the Docker image with the correct context
 echo "Building Docker image..."

@@ -1,7 +1,7 @@
-agent_name = "simple-chatbot"
-image = "DOCKER_USERNAME/simple-chatbot:0.1"
+agent_name = "datadog-chatbot"
+image = "DOCKER_USERNAME/datadog-chatbot:0.1"
 image_credentials = "DOCKER_CREDENTIALS"
-secret_set = "simple-chatbot-secrets"
+secret_set = "datadog-chatbot-secrets"
 enable_krisp = true
 
 [scaling]
