@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Write the Datadog API key to the config file
-echo "api_key: $DD_API_KEY" >> /etc/datadog-agent/datadog.yaml
+printf "api_key: %s\n" "$DD_API_KEY" >> /etc/datadog-agent/datadog.yaml
 
 # Start the Datadog Agent service
 service datadog-agent start || true
