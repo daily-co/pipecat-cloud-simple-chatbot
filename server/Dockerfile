@@ -17,6 +17,10 @@ COPY ./python.d /etc/datadog-agent/conf.d/python.d
 RUN mkdir -p /var/run/datadog/
 RUN chown dd-agent:dd-agent /var/run/datadog/
 
+# Create directory for bot logs
+RUN mkdir -p /var/log/pipecat-chatbot/
+RUN chown dd-agent:dd-agent /var/log/pipecat-chatbot/
+
 # Start Datadog Agent (move pre-app script to expected place where it'll be invoked by Pipecat Cloud base image)
 COPY --chmod=755 ./pre-app.sh /app/
 

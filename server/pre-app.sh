@@ -13,9 +13,9 @@ service datadog-agent-trace restart || true
 ## DEBUGGING
 
 # Check the status of the Datadog Agent subsystems for logging, custom metrics, and traces
-# service datadog-agent status
-# service datadog-agent-trace status
-# datadog-agent status
+service datadog-agent status
+service datadog-agent-trace status
+datadog-agent status
 
 # Display the Datadog agent log
-# cat /var/log/datadog/agent.log
+cat /var/log/datadog/agent.log

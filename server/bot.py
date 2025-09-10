@@ -181,6 +181,8 @@ async def main(room_url: str, token: str, config: dict):
             enable_metrics=True,
             enable_usage_metrics=True,
         ),
+        enable_tracing=True,  # Enable tracing for this task
+        enable_turn_tracking=True,
         observers=[RTVIObserver(rtvi)],
     )
 

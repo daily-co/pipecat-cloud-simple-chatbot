@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Simple Chatbot example implemented for Pipecat Cloud"
 requires-python = ">=3.10"
 dependencies = [
-    "pipecat-ai[daily,cartesia,openai,silero,runner]>=0.0.79",
+    "pipecat-ai[daily,cartesia,openai,silero,runner,tracing]>=0.0.79",
     "pipecatcloud>=0.2.1,<1",
     "python-dotenv>=1.0.0",
     "loguru>=0.7.0",
