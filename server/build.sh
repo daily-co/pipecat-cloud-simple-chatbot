@@ -2,7 +2,7 @@
 set -e
 
 VERSION="0.1"
-DOCKER_USERNAME="jamesdaily"
+DOCKER_USERNAME="hushdaily"  # Change this to your actual Docker Hub username
 AGENT_NAME="datadog-chatbot"
 
 # Build the Docker image with the correct context

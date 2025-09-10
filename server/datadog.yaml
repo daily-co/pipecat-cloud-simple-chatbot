@@ -1,4 +1,4 @@
-site: us5.datadoghq.com # Update this to your Datadog site
+site: datadoghq.com # Update this to your Datadog site
 hostname: pipecat.daily.co # (or whatever would be useful for you to see in the Datadog dashboards)
 
 # Include the following line only if you need logging (see "Enabling Logging")

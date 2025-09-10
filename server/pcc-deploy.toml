@@ -1,6 +1,6 @@
 agent_name = "datadog-chatbot"
-image = "DOCKER_USERNAME/datadog-chatbot:0.1"
-image_credentials = "DOCKER_CREDENTIALS"
+image = "hushdaily/datadog-chatbot:0.1"
+image_credentials = "my-image-pull-secret"
 secret_set = "datadog-chatbot-secrets"
 enable_krisp = true
 
