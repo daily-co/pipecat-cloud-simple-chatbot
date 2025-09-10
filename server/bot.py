@@ -44,9 +44,18 @@ logger.add(sys.stderr, level="DEBUG")
 # Format log lines so that:
 # - Datadog can parse and display log levels, messages, and timestamps
 # - You can search Datadog logs by session_id
-def datadog_format(record):
+# - Include trace_id for log-trace correlation
+def datadog_format(record) -> str:
     format_string_safe_message = json.dumps(record["message"]).replace("{", "{{").replace("}", "}}")
     session_id = record["extra"].get("session_id", "")
+
+    # Get the current trace and span IDs for correlation
+    from ddtrace.trace import tracer
+
+    span = tracer.current_span()
+    trace_id = str(span.trace_id) if span else ""
+    span_id = str(span.span_id) if span else ""
+
     return (
         "{{"
         '"timestamp":"{time:YYYY-MM-DD HH:mm:ss.SSS}",'
@@ -55,7 +64,9 @@ def datadog_format(record):
         '"function":"{function}",'
         '"line":{line},'
         f'"message":{format_string_safe_message},'
-        f'"session_id": "{session_id}"'
+        f'"session_id": "{session_id}",'
+        f'"dd.trace_id": "{trace_id}",'
+        f'"dd.span_id": "{span_id}"'
         "}}\n"
     )
 
