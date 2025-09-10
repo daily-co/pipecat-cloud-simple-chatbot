@@ -1,0 +1,17 @@
+site: us5.datadoghq.com # Update this to your Datadog site
+hostname: pipecat.daily.co # (or whatever would be useful for you to see in the Datadog dashboards)
+
+# Include the following line only if you need logging (see "Enabling Logging")
+logs_enabled: true
+
+# Uncomment the below lines if you DON'T need traces (see "Enabling Traces")
+# apm_config:
+#   enabled: false
+
+# Uncomment the below lines if you DON'T need custom metrics (see "Enabling Custom Metrics")
+# use_dogstatsd: false
+
+kubelet_tls_verify: false
+autoconfig_exclude_features:
+  - kubernetes
+  - orchestratorexplorer

@@ -1,2 +1,4 @@
 pipecat-ai[daily,cartesia,openai,silero,runner]>=0.0.79
 pipecatcloud>=0.2.1
+ddtrace
+datadog

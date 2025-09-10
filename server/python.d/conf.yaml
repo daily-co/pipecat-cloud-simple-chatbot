@@ -1,0 +1,7 @@
+# Use whatever agent name would be useful for you to see in the Datadog dashboard
+logs:
+  - type: file
+    path: /var/log/pipecat-chatbot/datadog.log
+    service: pipecat-chatbot
+    source: python
+    sourcecategory: sourcecode
