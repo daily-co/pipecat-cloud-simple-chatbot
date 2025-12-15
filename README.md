@@ -85,7 +85,7 @@ Create `.env.local` file and add your `PIPECAT_CLOUD_API_KEY` and `AGENT_NAME`:
 
 ## Deployment
 
-> See the [Pipecat Cloud Quickstart](https://docs.pipecat.ai/deployment/pipecat-cloud/quickstart) for a complete walkthrough.
+> See the [Pipecat Quickstart](https://docs.pipecat.ai/getting-started/quickstart) for a complete walkthrough.
 
 ### Deploy Server to Pipecat Cloud
 
