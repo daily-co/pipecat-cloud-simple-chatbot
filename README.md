@@ -114,7 +114,7 @@ Create `.env.local` file and add your `PIPECAT_CLOUD_API_KEY` and `AGENT_NAME`:
 4. Create a secret set for your API keys:
 
    ```bash
-   uv run pcc secrets set simple-chatbot-secrets --file .env
+   uv run pcc secrets set simple-chatbot-eu-secrets --file .env --region eu-central
    ```
 
 5. Deploy to Pipecat Cloud:
@@ -142,7 +142,7 @@ You can test your deployment to ensure everything is working using the Pipecat C
 ## Project Structure
 
 ```
-simple-chatbot/
+simple-chatbot-eu/
 ├── client-next/            # Next.js client application
 │   ├── src/
 │   │   ├── app/            # Next.js app routes
