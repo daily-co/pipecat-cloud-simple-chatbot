@@ -111,7 +111,7 @@ Create `.env.local` file and add your `PIPECAT_CLOUD_API_KEY` and `AGENT_NAME`:
 4. Create a secret set for your API keys:
 
    ```bash
-   pipecat cloud secrets set simple-chatbot-eu-secrets --file .env
+   pipecat cloud secrets set simple-chatbot-secrets --file .env
    ```
 
 5. Deploy to Pipecat Cloud:
