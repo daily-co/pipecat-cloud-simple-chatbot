@@ -2,7 +2,7 @@
 set -e
 
 VERSION="0.1"
-DOCKER_USERNAME="DOCKER_USERNAME"
+DOCKER_USERNAME="hushdaily"
 AGENT_NAME="simple-chatbot-eu"
 
 # Build the Docker image with the correct context

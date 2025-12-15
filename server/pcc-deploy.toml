@@ -1,6 +1,6 @@
 agent_name = "simple-chatbot-eu"
-image = "DOCKER_USERNAME/simple-chatbot-eu:0.1"
-image_credentials = "DOCKER_CREDENTIALS"
+image = "hushdaily/simple-chatbot-eu:0.1"
+image_credentials = "docker-creds"
 secret_set = "simple-chatbot-eu-secrets"
 region = "eu-central"
 enable_krisp = true
