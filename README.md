@@ -85,45 +85,42 @@ Create `.env.local` file and add your `PIPECAT_CLOUD_API_KEY` and `AGENT_NAME`:
 
 ## Deployment
 
-> See the [Pipecat Cloud Quickstart](https://docs.pipecat.daily.co/quickstart) for a complete walkthrough.
+> See the [Pipecat Cloud Quickstart](https://docs.pipecat.ai/deployment/pipecat-cloud/quickstart) for a complete walkthrough.
 
 ### Deploy Server to Pipecat Cloud
 
-1. Install the Pipecat Cloud CLI:
+1. Install the Pipecat CLI:
 
    ```bash
-   uv pip install pipecatcloud
+   uv tool install pipecat-ai-cli
    ```
 
 2. Authenticate:
 
    ```bash
-   uv run pcc auth login
+   pipecat cloud auth login
    ```
 
 3. From the `server` directory, build and push your Docker image:
 
    ```bash
    cd server
-   chmod +x build.sh
-   ./build.sh
+   pipecat cloud docker build-push
    ```
-
-   > IMPORTANT: Before running this build script, you need to add your DOCKER_USERNAME to build.sh
 
 4. Create a secret set for your API keys:
 
    ```bash
-   uv run pcc secrets set simple-chatbot-secrets --file .env
+   pipecat cloud secrets set simple-chatbot-eu-secrets --file .env --region eu-central
    ```
 
 5. Deploy to Pipecat Cloud:
 
    ```bash
-   uv run pcc deploy
+   pipecat cloud deploy
    ```
 
-   > IMPORTANT: Before deploying, you need to add your DOCKER_USERNAME and DOCKER_CREDENTIALS. Learn how to [add an image pull secret](https://docs.pipecat.daily.co/agents/secrets#image-pull-secrets).
+   > IMPORTANT: Before deploying, you need to update your image name in `pcc-deploy.toml` and set up image pull secrets. Learn how to [add an image pull secret](https://docs.pipecat.ai/deployment/pipecat-cloud/fundamentals/secrets#image-pull-secrets).
 
 ### Test using Pipecat Cloud Sandbox
 
@@ -142,7 +139,7 @@ You can test your deployment to ensure everything is working using the Pipecat C
 ## Project Structure
 
 ```
-simple-chatbot/
+simple-chatbot-eu/
 ├── client-next/            # Next.js client application
 │   ├── src/
 │   │   ├── app/            # Next.js app routes
