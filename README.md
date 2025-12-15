@@ -139,7 +139,7 @@ You can test your deployment to ensure everything is working using the Pipecat C
 ## Project Structure
 
 ```
-simple-chatbot-eu/
+simple-chatbot/
 ├── client-next/            # Next.js client application
 │   ├── src/
 │   │   ├── app/            # Next.js app routes
@@ -153,7 +153,7 @@ simple-chatbot-eu/
     ├── assets/            # Robot animation frames
     ├── bot.py             # The Pipecat pipeline implementation
     ├── Dockerfile         # For building the container image
-    ├── build.sh           # Script for building and pushing Docker image
+   Docker image
     ├── requirements.txt   # Python dependencies
     ├── pcc-deploy.toml    # Pipecat Cloud deployment config
 ```
