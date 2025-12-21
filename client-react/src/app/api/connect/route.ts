@@ -49,8 +49,10 @@ export async function POST(request: NextRequest) {
 
     const data = await response.json();
 
-    // Both local and cloud return the same format
-    return NextResponse.json(data);
+    // Filter out sessionId - Daily.js doesn't accept it
+    const { sessionId, ...dailyConnectionData } = data;
+
+    return NextResponse.json(dailyConnectionData);
   } catch (error) {
     console.error('API error:', error);
     return NextResponse.json(
