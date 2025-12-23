@@ -1,3 +1,6 @@
+> [!CAUTION]
+> This repo is no longer maintained. Check out the [simple-chatbot example](https://github.com/pipecat-ai/pipecat-examples/tree/main/simple-chatbot) for an update to date example that can be deployed to Pipecat Cloud. 
+
 # Simple Chatbot for Pipecat Cloud
 
 This project demonstrates how to build a complete Pipecat AI agent application with both client and server components. It includes a Next.js client for interacting with a Pipecat AI bot server through Daily.co's WebRTC transport.
